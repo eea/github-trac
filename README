@@ -44,7 +44,7 @@ To install this Trac Plugin:
         Under the: Post-Receive URLs
         Place a link to your Trac repository, in a format like this:
         
-        http://yourdomian.com/projects/projectname/github/APITOKEN
+        http://yourdomian.com/yourtracroot/github/APITOKEN
 
         You can get your GitHub API token from your accounts page.
         This is for your security, only those that know the API Token will able to post to this url
