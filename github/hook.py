@@ -101,7 +101,7 @@ class CommitHook:
         
         msg = commit['message']
         self.env.log.debug("Processing Commit: %s", msg)
-        note = "Changeset: [/changeset/%s]" % commit['id']
+        note = "Changeset: [/changeset/%s %s]" % (commit['id'], commit['id'])
         msg = "%s \n %s" % (msg, note)
         author = commit['author']['name']
         timestamp = datetime.now(utc)
