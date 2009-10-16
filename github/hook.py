@@ -90,7 +90,9 @@ class CommitHook:
                        'references': '_cmdRefs',
                        'refs':       '_cmdRefs',
                        'ref':       '_cmdRefs',
-                       'see':        '_cmdRefs'}
+                       'see':        '_cmdRefs',
+                       'return':     '_cmdReturns',
+                       'returns':    '_cmdReturns'}
 
 
     def __init__(self, env):
@@ -151,3 +153,6 @@ class CommitHook:
 
     def _cmdRefs(self, ticket):
         pass
+
+    def _cmdReturns(self, ticket):
+        ticket['owner'] = ticket['reporter']
