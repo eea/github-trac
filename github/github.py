@@ -81,12 +81,14 @@ class GithubPlugin(Component):
 
     def processBrowserURL(self, req):
         self.env.log.debug("processBrowserURL")
-        browser = self.browser.replace('/master', '/')
         rev = req.args.get('rev')
-        
-        url = req.path_info.replace('/browser', '')
-        if not rev:
+        if rev:
+            browser = self.browser.replace('/master', '/')
+        else:
             rev = ''
+            browser = self.browser
+
+        url = req.path_info.replace('/browser', '')
 
         redirect = '%s%s%s' % (browser, rev, url)
         self.env.log.debug("Redirect URL: %s" % redirect)
