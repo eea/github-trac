@@ -1,6 +1,7 @@
 from trac.core import *
 from trac.config import Option, IntOption, ListOption, BoolOption
 from trac.web.api import IRequestFilter, IRequestHandler, Href
+from trac.versioncontrol import RepositoryManager
 from trac.util.translation import _
 from hook import CommitHook
 
@@ -16,7 +17,6 @@ class GithubPlugin(Component):
     closestatus = Option('github', 'closestatus', '', doc="""This is the status used to close a ticket. It defaults to closed.""")
     browser = Option('github', 'browser', '', doc="""Place your GitHub Source Browser URL here to have the /browser entry point redirect to GitHub.""")
     autofetch = Option('github', 'autofetch', '', doc="""Should we auto fetch the repo when we get a commit hook from GitHub.""")
-    repo = Option('trac', 'repository_dir' '', doc="""This is your repository dir""")
 
     def __init__(self):
         self.hook = CommitHook(self.env)
@@ -114,7 +114,8 @@ class GithubPlugin(Component):
 
 
         if self.autofetch:
-            repo = Git(self.repo)
+            repodir = RepositoryManager(self.env).repository_dir
+            repo = Git(repodir)
 
             try:
               repo.execute(['git', 'fetch'])
