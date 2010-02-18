@@ -5,6 +5,7 @@ from trac.versioncontrol import RepositoryManager
 from trac.util.translation import _
 from hook import CommitHook
 
+import os.path
 import simplejson
 
 from git import Git, GitCommandError
@@ -115,6 +116,8 @@ class GithubPlugin(Component):
 
         if self.autofetch:
             repodir = RepositoryManager(self.env).repository_dir
+            if not os.path.isabs(repodir):
+                repodir = os.path.join(self.env.path, repodir)
             repo = Git(repodir)
 
             try:
