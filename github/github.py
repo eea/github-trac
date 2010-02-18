@@ -6,7 +6,7 @@ from hook import CommitHook
 
 import simplejson
 
-from git import Git
+from git import Git, GitCommandError
 
 class GithubPlugin(Component):
     implements(IRequestHandler, IRequestFilter)
@@ -118,7 +118,10 @@ class GithubPlugin(Component):
 
             try:
               repo.execute(['git', 'fetch'])
-            except:
-              self.env.log.debug("git fetch failed!")
+            except GitCommandError, e:
+              self.env.log.error("git fetch failed: %s" % e)
+              self.env.log.error("git fetch output: %s" % e.stderr)
+            except Exception, e:
+              self.env.log.error("git fetch failed: %s" % e)
 
 
