@@ -40,7 +40,8 @@ To install this Trac Plugin:
         autofetch = true
 
         #Optional - file mapping between svn revisions and git hashes
-        svn_revmap = revmap.map
+        enable_revmap = 1
+        svn_revmap = revmap
         
     5. Go to the Admin page for your project on GitHub. Then select the services tab.
         Under the: Post-Receive URLs
