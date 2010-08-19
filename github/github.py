@@ -3,6 +3,7 @@ from trac.config import Option, IntOption, ListOption, BoolOption
 from trac.web.api import IRequestFilter, IRequestHandler, Href
 from trac.env import IEnvironmentSetupParticipant
 from trac.util.translation import _
+from trac.db import Table, Column, Index
 from hook import CommitHook
 
 import simplejson
@@ -36,14 +37,14 @@ class GithubPlugin(Component):
 
     # IEnvironmentSetupParticpant methods
     def environment_created(self):
-        if revmap:
+        if self.revmap:
             self._upgrade_db(self.env.get_db_cnx())
 
     #return true if the db table doesn't exist or needs to be updated
     def environment_needs_upgrade(self, db):
-        if not revmap:
+        if self.revmap == 0:
             return False
-        if reread_revmap:
+        if self.reread_revmap:
             self.config.set('github.reread_revmap', 0)
             self.config.save()
             return True
@@ -64,29 +65,35 @@ class GithubPlugin(Component):
     def _upgrade_db(self, db):
         #open the revision map
         try:
-            revmap_fd = open(revmap, 'rb')
+            revmap_fd = open(self.revmap, 'rb')
         except IOError:
-            raise ResourceNotFound(_("revision map '%s' not found", revmap)
+            raise ResourceNotFound(_("revision map '%s' not found", self.revmap))
         cursor = db.cursor()
         try:
             cursor.execute("DROP TABLE svn_revmap;")
         except:
             pass
 
-        db_backend = db.get_db_cnx()
+        try:
+            from trac.db import DatabaseManager
+            db_backend, _ = DatabaseManager(self.env)._get_connector()
+        except ImportError:
+            db_backend = self.env.get_db_cnx()
+
         for stmt in db_backend.to_sql(self.SCHEMA):
-            self.env.log(stmt)
+            self.env.log.debug(stmt)
             cursor.execute(stmt)
 
         insert_count = 0
         for line in revmap_fd:
             [svn_rev, git_hash] = line.split()
-            insert_query = "INSERT INTO svn_revmap (svn_rev, git_hash) VALUES (%s, %s)" % (svn_rev, git_hash)
+            insert_query = "INSERT INTO svn_revmap (svn_rev, git_hash) VALUES (%s, '%s')" % (svn_rev, git_hash)
             self.env.log.debug(insert_query)
             cursor.execute(insert_query)
-            insert_count++
+            ++insert_count
 
         self.env.log.debug("inserted %d mappings into svn_revmap" % insert_count)
+
 
     # IRequestHandler methods
     def match_request(self, req):
