@@ -21,6 +21,7 @@ class GithubPlugin(Component):
     autofetch     = Option('github', 'autofetch',     '', doc = """Should we auto fetch the repo when we get a commit hook from GitHub.""")
     repo          = Option('trac',   'repository_dir' '', doc = """This is your repository dir""")
     revmap        = Option('github', 'svn_revmap',    '', doc = """a plaintext file mapping svn revisions to git hashes""")
+    enable_revmap = Option('github', 'enable_revmap',  0, doc = """use the svn->git map when a request looks like a svn changeset """)
     reread_revmap = Option('github', 'reread_revmap',  0, doc = """force the rereading of the revmap""")
 
     SCHEMA = Table('svn_revmap', key = ('svn_rev'))[
@@ -132,6 +133,12 @@ class GithubPlugin(Component):
     def post_process_request(self, req, template, data, content_type):
         return (template, data, content_type)
 
+    def _get_git_hash(self, svn_rev):
+        cursor = self.env.get_db_cnx().cursor()
+        row = cursor.execute("SELECT git_hash FROM svn_revmap WHERE svn_rev = %s;" % svn_rev).fetchone()
+        if row:
+            return row[0]
+        return None
 
     def processChangesetURL(self, req):
         self.env.log.debug("processChangesetURL")
@@ -140,11 +147,16 @@ class GithubPlugin(Component):
         url = req.path_info.replace('/changeset/', '')
         self.env.log.debug("url is %s" % url)
         svn_rev_match = re.match( '^([0-9]{1,6})([^0-9a-fA-F]|$)', url)
-        if svn_rev_match:
+        if svn_rev_match and self.enable_revmap:
             svn_rev = svn_rev_match.group(1)
-            self.env.log.debug("found a svn revision: %s" % svn_rev);
-        else:
-            self.env.log.debug("didn't find a svn revision");
+            git_hash = self._get_git_hash(svn_rev)
+            if git_hash:
+                url = git_hash
+                self.env.log.debug("mapping svn revision %s to github hash %s" % (svn_rev, git_hash));
+            else:
+                self.env.log.debug("couldn't map svn revision %s", svn_rev);
+                req.redirect(self.browser)
+            #XXX: fail gracefully if it doesn't exist
 
         if not url:
             browser = self.browser
@@ -187,7 +199,6 @@ class GithubPlugin(Component):
 
             for i in jsondata['commits']:
                 self.hook.process(i, status)
-
 
         if self.autofetch:
             repo = Git(self.repo)
