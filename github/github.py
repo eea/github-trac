@@ -39,12 +39,12 @@ class GithubPlugin(Component):
 
     # IEnvironmentSetupParticpant methods
     def environment_created(self):
-        if self.revmap:
+        if self.enable_revmap:
             self._upgrade_db(self.env.get_db_cnx())
 
     #return true if the db table doesn't exist or needs to be updated
     def environment_needs_upgrade(self, db):
-        if self.revmap == 0:
+        if self.enable_revmap == 0:
             return False
         if self.reread_revmap:
             self.config.set('github.reread_revmap', 0)
@@ -62,7 +62,8 @@ class GithubPlugin(Component):
             return True
 
     def upgrade_environment(self, db):
-        self._upgrade_db(db)
+        if self.enable_revmap:
+            self._upgrade_db(db)
 
     def _upgrade_db(self, db):
         #open the revision map
