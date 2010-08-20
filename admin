@@ -71,7 +71,7 @@ install_dependency() {
                 cd github-trac
                 git pull
             fi
-            python setup.py install || "$1 failed to install" 
+            python setup.py install || die "$1 failed to install" 
             cd ..
             [ -e trac.ini.github ] || ln -s github-trac/trac.ini.github
             [ -e GithubPlugin*-py$PYTHON_VERSION.egg ] || 
