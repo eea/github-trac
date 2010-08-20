@@ -17,15 +17,15 @@ do_command() {
     [ -n "$CMD" ] || die "usage: $ADMIN [init|destroy|run]"
     shift
     case "$CMD" in
-        init) init $* ;;
-        destroy) destroy $* ;;
-        run)
+        init|new) init $* ;;
+        destroy|clean) destroy $* ;;
+        run|start)
             go_to_build
             source bin/activate
             tracd -s --port 8000 $TRAC_DIR
             ;;
         rebuild) $0 destroy && $0 init ;;            
-        update) update ;;
+        up*) update ;;
     esac
 }
 
