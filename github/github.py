@@ -69,7 +69,7 @@ class GithubPlugin(Component):
         try:
             revmap_fd = open(self.revmap, 'rb')
         except IOError:
-            raise ResourceNotFound(_("revision map '%s' not found", self.revmap))
+            raise ResourceNotFound(_("revision map '%(revmap)s' not found", revmap=self.revmap))
         cursor = db.cursor()
         try:
             cursor.execute("DROP TABLE svn_revmap;")
