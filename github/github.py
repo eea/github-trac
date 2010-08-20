@@ -78,7 +78,7 @@ class GithubPlugin(Component):
 
         try:
             from trac.db import DatabaseManager
-            db_backend, _ = DatabaseManager(self.env)._get_connector()
+            db_backend, ignored = DatabaseManager(self.env)._get_connector()
         except ImportError:
             db_backend = self.env.get_db_cnx()
 
