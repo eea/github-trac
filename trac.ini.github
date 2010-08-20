@@ -13,4 +13,4 @@ svn_revmap = revmap
 
 [logging]
 log_type = syserr
-log_level = INFO
+log_level = DEBUG
