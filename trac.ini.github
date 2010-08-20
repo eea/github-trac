@@ -1,0 +1,12 @@
+[components]
+github.* = enabled
+
+[github]
+apitoken = YOUR GITHUB API TOKEN
+closestatus = closed (This is optional, defaults to closed
+browser = http://github.com/davglass/tree/master
+
+autofetch = true
+
+enable_revmap = 1
+svn_revmap = revmap
