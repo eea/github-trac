@@ -1,0 +1,118 @@
+#!/bin/bash
+PATH=/bin:/usr/bin
+
+ADMIN=`basename $0`
+BUILD_DIR=build
+TRAC_DIR=trac
+BUILD_INFO=build.info
+PYTHON="python2.6"
+
+do_command() {
+    CMD=$1
+    [ -n "$CMD" ] || die "usage: $ADMIN [init|destroy|run]"
+    shift
+    case "$CMD" in
+        init) init $* ;;
+        destroy) destroy $* ;;
+        run)
+            source bin/activate
+            go_to_build
+            tracd -s --port 8000 $TRAC_DIR
+    esac
+}
+
+init() {
+    if [ "$1" ]; then
+        BUILD_DIR="$1"
+    fi
+    mkdir -p $BUILD_DIR || "Not a valid directory: $BUILD_DIR"
+    cd $BUILD_DIR || die "Unable to chdir to $BUILD_DIR"
+    [ ! -e $BUILD_INFO ] || die "Build already exists"
+    if [ `find . -maxdepth 1 ! -name '.*' | wc -l` -gt 1 ]; then
+        mkdir -p .orig
+        cp -r * .orig
+    fi
+    build_info >$BUILD_INFO
+    virtualenv --python=$PYTHON --no-site-packages . || die "virtualenv failed"
+    source bin/activate
+    install_dependency Trac
+
+    trac-admin $TRAC_DIR initenv
+    admin run
+}
+
+install_dependency() {
+    case "$1" in
+        django-forum)
+            git clone git@github.com:dafrito/django-forum.git || die "failed to pull $1"
+            cd $1
+            python setup.py install || "$1 failed to install" 
+            cd ..
+        ;;
+        django-registration)
+            hg clone http://bitbucket.org/ubernostrum/django-registration || die "failed to pull $1"
+            cd $1
+            python setup.py install || "$1 failed to install" 
+            cd ..
+        ;;
+        notime)
+            git clone git@github.com:dafrito/notime.git || die "failed to pull $1"
+            cp notime/notime.wsgi.tmpl myproject.wsgi
+            sed -i "s#%SITEPACKAGES%#`pwd`/lib/$PYTHON/site-packages#" myproject.wsgi || die "Failed to create WSGI conf"
+            cp notime/dist_settings.py.tmpl dist_settings.py
+            sed -i "s#%HOME%#`pwd`#" dist_settings.py || die "Failed to create dist_settings.py"
+            cd notime
+            ln -s ../dist_settings.py
+            cd ..
+            if [ -e ".settings.py" ]; then
+                echo >>dist_settings.py
+                echo "# The following was automatically included from .settings.py" >>dist_settings.py
+                cat .settings.py >>dist_settings.py
+            fi
+        ;;
+        mysql-python) 
+            [ -e /usr/include/mysql ] || "MySQL header files were not found"
+            ln -s /usr/include/mysql include/mysql 
+            easy_install -Z $1 || die "$1 failed to install"
+        ;;
+        *) easy_install -Z $1 || die "$1 failed to install"
+    esac;
+}
+
+check_for_build() {
+    [ -e $BUILD_DIR/$BUILD_INFO ] || die "Not a build directory"
+}
+
+go_to_build() {
+    check_for_build
+    cd $BUILD_DIR || die "Cannot chdir to $BUILD_DIR"
+}
+
+build_info() {
+    echo "Do not delete this file. $ADMIN uses this file to determine whether"
+    echo "directory contains a build."
+    echo
+    echo "Diagnostic information:"
+    echo "Build date: `date`"
+    echo "pwd: `pwd`"
+    echo "HOME: $HOME"
+    python --version 2>&1
+    git --version 2>&1
+    echo "System info: `uname -a`"
+}
+
+destroy() {
+    $ADMIN stop
+    check_for_build
+    if [ -d .last-build ]; then
+        rm -rf .last-build
+    fi
+    mv $BUILD_DIR .last-build
+}
+
+die() {
+    echo $* 1>&2
+    exit 1
+}
+
+do_command $*
