@@ -99,7 +99,7 @@ install_dependency() {
             fi
             python setup.py install || die "$1 failed to install" 
             cd ..
-            [ -e trac.ini.github ] || ln -s github-trac/trac.ini.github
+            [ -e trac.ini ] || ln -s github-trac/trac.ini
             [ -e GithubPlugin*-py$PYTHON_VERSION.egg ] || 
                 ln -s lib/python2.6/site-packages/GithubPlugin*-py$PYTHON_VERSION.egg
         ;;
