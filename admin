@@ -22,6 +22,8 @@ do_command() {
             go_to_build
             source bin/activate
             tracd -s --port 8000 $TRAC_DIR
+            ;;
+        rebuild) $0 destroy && $0 init ;;            
     esac
 }
 
