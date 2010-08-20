@@ -25,7 +25,7 @@ class GithubPlugin(Component):
     enable_revmap = Option('github', 'enable_revmap',  0, doc = """use the svn->git map when a request looks like a svn changeset """)
     reread_revmap = Option('github', 'reread_revmap',  0, doc = """force the rereading of the revmap""")
 
-    SCHEMA = Table('svn_revmap', key = ('svn_rev'))[
+    SCHEMA = Table('svn_revmap', key = ('svn_rev', 'git_hash'))[
             Column('svn_rev'),
             Column('git_hash'),
             Index(['svn_rev', 'git_hash']),]
