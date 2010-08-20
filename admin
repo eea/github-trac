@@ -7,6 +7,7 @@ TRAC_DIR=trac
 BUILD_INFO=build.info
 PYTHON="python2.6"
 PYTHON_VERSION="2.6"
+CLONE_OR_SYMLINK=symlink
 
 PROJECT_NAME='Parrot'
 TRAC_DB=sqlite:db/trac.db
@@ -64,12 +65,17 @@ install_dependencies() {
 install_dependency() {
     case "$1" in
         github-trac)
-            if [ ! -d "github-trac" ]; then
-                git clone .. github-trac
+            if [ -d "github-trac" ]; then
                 cd github-trac
+                if [ ! -h "github-trac" ]; then
+                    git pull
+                fi
             else
+                case "$CLONE_OR_SYMLINK" in
+                    clone) git clone .. github-trac ;;
+                    *link) ln -s .. github-trac ;;
+                esac
                 cd github-trac
-                git pull
             fi
             python setup.py install || die "$1 failed to install" 
             cd ..
