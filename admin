@@ -138,7 +138,10 @@ destroy() {
     if [ -d .last-build ]; then
         rm -rf .last-build
     fi
-    mv $BUILD_DIR .last-build
+    mkdir .last-build
+    for artifact in $BUILD_DIR build dist GithubPlugin.egg-info; do
+        [ -d $artifact ] && mv $artifact .last-build
+    done
 }
 
 die() {
