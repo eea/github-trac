@@ -7,6 +7,11 @@ TRAC_DIR=trac
 BUILD_INFO=build.info
 PYTHON="python2.6"
 
+PROJECT_NAME='Parrot'
+TRAC_DB=sqlite:db/trac.db
+REPO_TYPE=git
+REPO_LOCATION=/media/safe/mirrors/parrot
+
 do_command() {
     CMD=$1
     [ -n "$CMD" ] || die "usage: $ADMIN [init|destroy|run]"
@@ -15,8 +20,8 @@ do_command() {
         init) init $* ;;
         destroy) destroy $* ;;
         run)
-            source bin/activate
             go_to_build
+            source bin/activate
             tracd -s --port 8000 $TRAC_DIR
     esac
 }
@@ -26,7 +31,7 @@ init() {
         BUILD_DIR="$1"
     fi
     mkdir -p $BUILD_DIR || "Not a valid directory: $BUILD_DIR"
-    cd $BUILD_DIR || die "Unable to chdir to $BUILD_DIR"
+    pushd $BUILD_DIR || die "Unable to chdir to $BUILD_DIR"
     [ ! -e $BUILD_INFO ] || die "Build already exists"
     if [ `find . -maxdepth 1 ! -name '.*' | wc -l` -gt 1 ]; then
         mkdir -p .orig
@@ -37,8 +42,9 @@ init() {
     source bin/activate
     install_dependency Trac
 
-    trac-admin $TRAC_DIR initenv
-    admin run
+    trac-admin $TRAC_DIR initenv $PROJECT_NAME $TRAC_DB $REPO_TYPE $REPO_LOCATION
+    popd
+    $0 run
 }
 
 install_dependency() {
@@ -102,7 +108,7 @@ build_info() {
 }
 
 destroy() {
-    $ADMIN stop
+    $0 stop
     check_for_build
     if [ -d .last-build ]; then
         rm -rf .last-build
