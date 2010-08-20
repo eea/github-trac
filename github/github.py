@@ -1,4 +1,5 @@
 from trac.core import *
+from trac.resource import ResourceNotFound
 from trac.config import Option, IntOption, ListOption, BoolOption
 from trac.web.api import IRequestFilter, IRequestHandler, Href
 from trac.env import IEnvironmentSetupParticipant
