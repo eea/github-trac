@@ -24,6 +24,7 @@ do_command() {
             tracd -s --port 8000 $TRAC_DIR
             ;;
         rebuild) $0 destroy && $0 init ;;            
+        update) update ;;
     esac
 }
 
@@ -38,9 +39,8 @@ init() {
     build_info >$BUILD_INFO
     virtualenv --python=$PYTHON --no-site-packages . || die "virtualenv failed"
     source bin/activate
-    install_dependency Trac
-    install_dependency simplejson
-    install_dependency github-trac
+
+    install_dependencies
 
     trac-admin $TRAC_DIR initenv --inherit=trac.ini.github $PROJECT_NAME $TRAC_DB
     cd $TRAC_DIR/plugins 
@@ -55,15 +55,27 @@ init() {
     $0 run
 }
 
+install_dependencies() {
+    install_dependency Trac
+    install_dependency simplejson
+    install_dependency github-trac
+}
+
 install_dependency() {
     case "$1" in
         github-trac)
-            git clone .. github-trac
-            cd github-trac
+            if [ ! -d "github-trac" ]; then
+                git clone .. github-trac
+                cd github-trac
+            else
+                cd github-trac
+                git pull
+            fi
             python setup.py install || "$1 failed to install" 
             cd ..
-            ln -s github-trac/trac.ini.github
-            ln -s lib/python2.6/site-packages/GithubPlugin*-py$PYTHON_VERSION.egg
+            [ -e trac.ini.github ] || ln -s github-trac/trac.ini.github
+            [ -e GithubPlugin*-py$PYTHON_VERSION.egg ] || 
+                ln -s lib/python2.6/site-packages/GithubPlugin*-py$PYTHON_VERSION.egg
         ;;
         notime)
             git clone git@github.com:dafrito/notime.git || die "failed to pull $1"
@@ -82,6 +94,14 @@ install_dependency() {
         ;;
         *) easy_install -Z $1 || die "$1 failed to install"
     esac;
+}
+
+update() {
+    $0 stop
+    go_to_build
+    source bin/activate
+    install_dependencies
+    trac-admin $TRAC_DIR upgrade
 }
 
 check_for_build() {
