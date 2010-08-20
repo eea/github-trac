@@ -10,8 +10,6 @@ PYTHON_VERSION="2.6"
 
 PROJECT_NAME='Parrot'
 TRAC_DB=sqlite:db/trac.db
-REPO_TYPE=git
-REPO_LOCATION=/media/safe/mirrors/parrot
 
 do_command() {
     CMD=$1
@@ -42,8 +40,14 @@ init() {
     install_dependency simplejson
     install_dependency github-trac
 
-    trac-admin $TRAC_DIR initenv --inherit=trac.ini.github $PROJECT_NAME $TRAC_DB $REPO_TYPE $REPO_LOCATION
-    cd $TRAC_DIR/plugins && ln -s ../../GithubPlugin*-py$PYTHON_VERSION.egg
+    trac-admin $TRAC_DIR initenv --inherit=trac.ini.github $PROJECT_NAME $TRAC_DB
+    cd $TRAC_DIR/plugins 
+    ln -s ../../GithubPlugin*-py$PYTHON_VERSION.egg
+    cd -
+    cd $TRAC_DIR/conf
+    ln -s ../../trac.ini.github
+
+    trac-admin $TRAC_DIR upgrade
     popd
     $0 run
 }
