@@ -2,7 +2,7 @@
 PATH=/bin:/usr/bin
 
 ADMIN=`basename $0`
-BUILD_DIR=build
+BUILD_DIR=site
 TRAC_DIR=trac
 BUILD_INFO=build.info
 PYTHON="python2.6"
@@ -27,9 +27,6 @@ do_command() {
 }
 
 init() {
-    if [ "$1" ]; then
-        BUILD_DIR="$1"
-    fi
     mkdir -p $BUILD_DIR || "Not a valid directory: $BUILD_DIR"
     pushd $BUILD_DIR || die "Unable to chdir to $BUILD_DIR"
     [ ! -e $BUILD_INFO ] || die "Build already exists"
