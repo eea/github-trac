@@ -84,9 +84,11 @@ install_dependency() {
     case "$1" in
         github-trac)
             if [ -d "github-trac" ]; then
-                cd github-trac
                 if [ ! -h "github-trac" ]; then
+                    cd github-trac
                     git pull
+                else
+                    cd github-trac
                 fi
             else
                 case "$CLONE_OR_SYMLINK" in
