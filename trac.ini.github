@@ -10,3 +10,7 @@ autofetch = true
 
 enable_revmap = 1
 svn_revmap = revmap
+
+[logging]
+log_type = syserr
+log_level = INFO
