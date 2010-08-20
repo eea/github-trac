@@ -38,25 +38,24 @@ init() {
     virtualenv --python=$PYTHON --no-site-packages . || die "virtualenv failed"
     source bin/activate
     install_dependency Trac
+    install_dependency simplejson
+    install_dependency http://trac-hacks.org/svn/gitplugin/0.12
+    install_dependency github-trac
 
     trac-admin $TRAC_DIR initenv $PROJECT_NAME $TRAC_DB $REPO_TYPE $REPO_LOCATION
+    cat trac.ini.github >>$TRAC_DIR/conf/trac.ini
     popd
     $0 run
 }
 
 install_dependency() {
     case "$1" in
-        django-forum)
-            git clone git@github.com:dafrito/django-forum.git || die "failed to pull $1"
-            cd $1
+        github-trac)
+            git clone .. github-trac
+            cd github-trac
             python setup.py install || "$1 failed to install" 
             cd ..
-        ;;
-        django-registration)
-            hg clone http://bitbucket.org/ubernostrum/django-registration || die "failed to pull $1"
-            cd $1
-            python setup.py install || "$1 failed to install" 
-            cd ..
+            ln -s github-trac/trac.ini.github
         ;;
         notime)
             git clone git@github.com:dafrito/notime.git || die "failed to pull $1"
@@ -72,11 +71,6 @@ install_dependency() {
                 echo "# The following was automatically included from .settings.py" >>dist_settings.py
                 cat .settings.py >>dist_settings.py
             fi
-        ;;
-        mysql-python) 
-            [ -e /usr/include/mysql ] || "MySQL header files were not found"
-            ln -s /usr/include/mysql include/mysql 
-            easy_install -Z $1 || die "$1 failed to install"
         ;;
         *) easy_install -Z $1 || die "$1 failed to install"
     esac;
