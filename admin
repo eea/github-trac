@@ -48,6 +48,7 @@ init() {
     cd -
     cd $TRAC_DIR/conf
     ln -s ../../trac.ini.github
+    cd -
 
     trac-admin $TRAC_DIR upgrade
     popd
