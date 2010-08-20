@@ -6,6 +6,7 @@ BUILD_DIR=site
 TRAC_DIR=trac
 BUILD_INFO=build.info
 PYTHON="python2.6"
+PYTHON_VERSION="2.6"
 
 PROJECT_NAME='Parrot'
 TRAC_DB=sqlite:db/trac.db
@@ -39,11 +40,10 @@ init() {
     source bin/activate
     install_dependency Trac
     install_dependency simplejson
-    install_dependency http://trac-hacks.org/svn/gitplugin/0.12
     install_dependency github-trac
 
-    trac-admin $TRAC_DIR initenv $PROJECT_NAME $TRAC_DB $REPO_TYPE $REPO_LOCATION
-    cat trac.ini.github >>$TRAC_DIR/conf/trac.ini
+    trac-admin $TRAC_DIR initenv --inherit=trac.ini.github $PROJECT_NAME $TRAC_DB $REPO_TYPE $REPO_LOCATION
+    cd $TRAC_DIR/plugins && ln -s ../../GithubPlugin*-py$PYTHON_VERSION.egg
     popd
     $0 run
 }
@@ -56,6 +56,7 @@ install_dependency() {
             python setup.py install || "$1 failed to install" 
             cd ..
             ln -s github-trac/trac.ini.github
+            ln -s lib/python2.6/site-packages/GithubPlugin*-py$PYTHON_VERSION.egg
         ;;
         notime)
             git clone git@github.com:dafrito/notime.git || die "failed to pull $1"
