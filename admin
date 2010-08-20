@@ -103,22 +103,7 @@ install_dependency() {
             [ -e GithubPlugin*-py$PYTHON_VERSION.egg ] || 
                 ln -s lib/python2.6/site-packages/GithubPlugin*-py$PYTHON_VERSION.egg
         ;;
-        notime)
-            git clone git@github.com:dafrito/notime.git || die "failed to pull $1"
-            cp notime/notime.wsgi.tmpl myproject.wsgi
-            sed -i "s#%SITEPACKAGES%#`pwd`/lib/$PYTHON/site-packages#" myproject.wsgi || die "Failed to create WSGI conf"
-            cp notime/dist_settings.py.tmpl dist_settings.py
-            sed -i "s#%HOME%#`pwd`#" dist_settings.py || die "Failed to create dist_settings.py"
-            cd notime
-            ln -s ../dist_settings.py
-            cd ..
-            if [ -e ".settings.py" ]; then
-                echo >>dist_settings.py
-                echo "# The following was automatically included from .settings.py" >>dist_settings.py
-                cat .settings.py >>dist_settings.py
-            fi
-        ;;
-        *) easy_install -Z $1 || die "$1 failed to install"
+        *) easy_install -Z $1 || die "$1 failed to install" ;;
     esac;
 }
 
