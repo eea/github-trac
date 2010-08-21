@@ -47,7 +47,7 @@ class GithubPlugin(Component):
         if self.enable_revmap == 0:
             return False
         if self.reread_revmap:
-            self.config.set('github.reread_revmap', 0)
+            self.config.set('github','reread_revmap', 0)
             self.config.save()
             return True
         cursor = db.cursor()
