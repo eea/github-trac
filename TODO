@@ -1,4 +1,3 @@
 * add revmap support for browser urls
 * figure out a better failure mode when the revision isn't found
 * figure out why the browser nav item doesn't appear
-* make sure that the db table is only added when the revmap is enabled
