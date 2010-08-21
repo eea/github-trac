@@ -23,7 +23,6 @@ class GithubPlugin(Component):
     repo          = Option('trac',   'repository_dir' '', doc = """This is your repository dir""")
     revmap        = Option('github', 'svn_revmap',    '', doc = """a plaintext file mapping svn revisions to git hashes""")
     enable_revmap = Option('github', 'enable_revmap',  0, doc = """use the svn->git map when a request looks like a svn changeset """)
-    reread_revmap = Option('github', 'reread_revmap',  0, doc = """force the rereading of the revmap""")
 
     SCHEMA = Table('svn_revmap', key = ('svn_rev', 'git_hash'))[
             Column('svn_rev'),
@@ -46,10 +45,6 @@ class GithubPlugin(Component):
     def environment_needs_upgrade(self, db):
         if self.enable_revmap == 0:
             return False
-        if self.reread_revmap:
-            self.config.set('github','reread_revmap', 0)
-            self.config.save()
-            return True
         cursor = db.cursor()
         try:
             cursor.execute("SELECT COUNT(*) FROM svn_revmap")
