@@ -1,0 +1,158 @@
+#!/bin/bash
+PATH=/bin:/usr/bin
+# Sets up a virtual environment for testing purposes.
+
+ADMIN=`basename $0`
+BUILD_DIR=site
+TRAC_DIR=trac
+BUILD_INFO=build.info
+PYTHON="python2.6"
+PYTHON_VERSION="2.6"
+CLONE_OR_SYMLINK=symlink
+
+PROJECT_NAME='Parrot'
+TRAC_DB=sqlite:db/trac.db
+
+usage() {
+    echo "$ADMIN [build|clean|run]"
+    echo "  build         Builds this site."
+    echo "  clean         Removes existing artifacts."
+    echo "  run           Starts a tracd instance with the existing build."
+}
+
+do_command() {
+    CMD=$1
+    [ -n "$CMD" ] || (usage; die)
+    shift
+    case "$CMD" in
+        build) 
+            if [ -e $BUILD_DIR/$BUILD_INFO ]; then
+                $0 update
+            else
+                $0 init
+            fi
+        ;;
+        init|new) init $* ;;
+        destroy|clean) destroy $* ;;
+        run|start)
+            go_to_build
+            source bin/activate
+            tracd -s --port 8000 $TRAC_DIR
+            ;;
+        stop)  ;;
+        rebuild) $0 destroy && $0 init ;;            
+        up*) update ;;
+        *)
+            echo "Not recognized: $CMD" 1>&2
+            usage
+            exit 1
+    esac
+}
+
+init() {
+    mkdir -p $BUILD_DIR || "Not a valid directory: $BUILD_DIR"
+    pushd $BUILD_DIR || die "Unable to chdir to $BUILD_DIR"
+    [ ! -e $BUILD_INFO ] || die "Build already exists"
+    if [ `find . -maxdepth 1 ! -name '.*' | wc -l` -gt 1 ]; then
+        mkdir -p .orig
+        cp -r * .orig
+    fi
+    build_info >$BUILD_INFO
+    virtualenv --python=$PYTHON --no-site-packages . || die "virtualenv failed"
+    source bin/activate
+
+    install_dependencies
+
+    trac-admin $TRAC_DIR initenv --inherit=trac.ini.github $PROJECT_NAME $TRAC_DB
+    cd $TRAC_DIR/plugins 
+    ln -s ../../GithubPlugin*-py$PYTHON_VERSION.egg
+    cd -
+    cd $TRAC_DIR/conf
+    ln -s ../../trac.ini.github
+    cd -
+
+    trac-admin $TRAC_DIR upgrade
+    popd
+}
+
+install_dependencies() {
+    install_dependency Trac
+    install_dependency simplejson
+    install_dependency github-trac
+}
+
+install_dependency() {
+    case "$1" in
+        github-trac)
+            if [ -d "github-trac" ]; then
+                if [ ! -h "github-trac" ]; then
+                    cd github-trac
+                    git pull
+                else
+                    cd github-trac
+                fi
+            else
+                case "$CLONE_OR_SYMLINK" in
+                    clone) git clone .. github-trac ;;
+                    *link) ln -s .. github-trac ;;
+                esac
+                cd github-trac
+            fi
+            python setup.py install || die "$1 failed to install" 
+            cd ..
+            [ -e trac.ini ] || ln -s github-trac/trac.ini
+            [ -e GithubPlugin*-py$PYTHON_VERSION.egg ] || 
+                ln -s lib/python2.6/site-packages/GithubPlugin*-py$PYTHON_VERSION.egg
+        ;;
+        *) easy_install -Z $1 || die "$1 failed to install" ;;
+    esac;
+}
+
+update() {
+    $0 stop
+    go_to_build
+    source bin/activate
+    install_dependencies
+    trac-admin $TRAC_DIR upgrade
+}
+
+check_for_build() {
+    [ -e $BUILD_DIR/$BUILD_INFO ] || die "Not a build directory"
+}
+
+go_to_build() {
+    check_for_build
+    cd $BUILD_DIR || die "Cannot chdir to $BUILD_DIR"
+}
+
+build_info() {
+    echo "Do not delete this file. $ADMIN uses this file to determine whether"
+    echo "directory contains a build."
+    echo
+    echo "Diagnostic information:"
+    echo "Build date: `date`"
+    echo "pwd: `pwd`"
+    echo "HOME: $HOME"
+    python --version 2>&1
+    git --version 2>&1
+    echo "System info: `uname -a`"
+}
+
+destroy() {
+    $0 stop
+    check_for_build
+    if [ -d .last-build ]; then
+        rm -rf .last-build
+    fi
+    mkdir .last-build
+    for artifact in $BUILD_DIR build dist GithubPlugin.egg-info; do
+        [ -d $artifact ] && mv $artifact .last-build
+    done
+}
+
+die() {
+    echo $* 1>&2
+    exit 1
+}
+
+do_command $*

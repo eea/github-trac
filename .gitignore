@@ -1,5 +1,7 @@
 *.egg-info
 build
 dist
+site
 *~
 *.swp
+.last-build
