@@ -110,18 +110,13 @@ class GithubPlugin(Component):
         return []
 
     def _format_changeset_link(self, formatter, rev_type, ns, match):
-        self.env.log.debug("_format_changeset_link called")
-        self.env.log.debug("formatter is %s" % formatter)
-        self.env.log.debug("rev_type is %s" % rev_type)
-        self.env.log.debug("ns is %s" % ns)
-        self.env.log.debug("match is %s" % match)
         git_hash = match.group(0)
         if rev_type == 'svn':
             svn_rev = match.group(0).replace('r','',1)
-            self.env.log.debug("found svn link; using revision %s" % svn_rev)
             git_hash = self._get_git_hash(svn_rev)
         if git_hash:
-            return tag.a(match.group(0), href="%s/%s" % (formatter.href.changeset(), git_hash), class_="fake_changeset")
+            return tag.a(match.group(0), href="%s/%s" % (formatter.href.changeset(), git_hash),
+                    title="insert title here", class_="changeset")
         return match.group(0)
 
     # IRequestHandler methods
