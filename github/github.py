@@ -4,6 +4,7 @@ from trac.config import Option, IntOption, ListOption, BoolOption
 from trac.web.api import IRequestFilter, IRequestHandler, Href
 from trac.env import IEnvironmentSetupParticipant
 from trac.util.translation import _
+from trac.util.text import shorten_line
 from trac.db import Table, Column, Index
 from trac.wiki import IWikiSyntaxProvider
 from genshi.builder import tag
@@ -115,8 +116,9 @@ class GithubPlugin(Component):
             svn_rev = match.group(0).replace('r','',1)
             git_hash = self._get_git_hash(svn_rev)
         if git_hash:
+            title = shorten_line(self._get_git_title(git_hash))
             return tag.a(match.group(0), href="%s/%s" % (formatter.href.changeset(), git_hash),
-                    title="insert title here", class_="changeset")
+                    title=title, class_="changeset")
         return match.group(0)
 
     # IRequestHandler methods
@@ -162,6 +164,10 @@ class GithubPlugin(Component):
         if row:
             return row[0]
         return None
+
+    def _get_git_title(self, git_hash):
+        #TODO: working code
+        return "um... tooltip?"
 
     def processChangesetURL(self, req):
         self.env.log.debug("processChangesetURL")
