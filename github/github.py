@@ -31,6 +31,7 @@ class GithubPlugin(Component):
     SCHEMA = Table('svn_revmap', key = ('svn_rev', 'git_hash'))[
             Column('svn_rev'),
             Column('git_hash'),
+            Column('commit_msg'),
             Index(['svn_rev', 'git_hash']),]
 
 
@@ -88,11 +89,16 @@ class GithubPlugin(Component):
 
         insert_count = 0
         for line in revmap_fd:
-            [svn_rev, git_hash] = line.split()
-            insert_query = "INSERT INTO svn_revmap (svn_rev, git_hash) VALUES (%s, '%s')" % (svn_rev, git_hash)
+            #slurp the '===' line
+            #next line is the hash
+            #slurp lines into the commit messsages until there's a blank line, a line starting with git-svn-id or an ===
+            #if there's a git-svn-id,
+                #extract the svn revision number
+            #perform any necessary escaping on the commit messages
+            insert_query = "INSERT INTO svn_revmap (svn_rev, git_hash, commit_msg) VALUES (%s, '%s', '%s')" % (svn_rev, git_hash, commit_msg)
             self.env.log.debug(insert_query)
             cursor.execute(insert_query)
-            ++insert_count
+            insert_count += 1
 
         self.env.log.debug("inserted %d mappings into svn_revmap" % insert_count)
 
