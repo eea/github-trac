@@ -198,12 +198,14 @@ class GithubPlugin(Component):
         row = cursor.execute("SELECT 1 FROM svn_revmap WHERE git_hash LIKE '%s%%';" % git_hash).fetchone()
         if row:
             return True
-        self.env.log.debug("REJECTED HASH '%s'", git_hash)
         return False
 
     def _get_git_title(self, git_hash):
-        #TODO: working code
-        return "um... tooltip?"
+        cursor = self.env.get_db_cnx().cursor()
+        row = cursor.execute("SELECT commit_msg FROM svn_revmap WHERE git_hash LIKE '%s%%';" % git_hash).fetchone()
+        if row:
+            return row[0]
+        return "<no commit message>"
 
     def processChangesetURL(self, req):
         self.env.log.debug("processChangesetURL")
