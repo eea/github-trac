@@ -41,6 +41,7 @@ To install this Trac Plugin:
 
         #Optional - file mapping between svn revisions and git hashes
         enable_revmap = 1
+        #created with git log --quiet --format='%H%n%s%n%b'
         svn_revmap = revmap
         
     5. Go to the Admin page for your project on GitHub. Then select the services tab.

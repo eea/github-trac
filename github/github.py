@@ -88,17 +88,39 @@ class GithubPlugin(Component):
             cursor.execute(stmt)
 
         insert_count = 0
-        for line in revmap_fd:
-            #slurp the '===' line
-            #next line is the hash
-            #slurp lines into the commit messsages until there's a blank line, a line starting with git-svn-id or an ===
-            #if there's a git-svn-id,
-                #extract the svn revision number
-            #perform any necessary escaping on the commit messages
+        git_hash = revmap_fd.readline()[0:-1]
+        while 1:
+            #make sure this line is the hash
+            if not re.match(r'[0-9a-f]{40}', git_hash):
+                raise Exception("expecting hash, found '%s'" % git_hash)
+            line = revmap_fd.readline()[0:-1]
+
+            if line.startswith('git-svn-id:'):
+                commit_msg = '<no commit message>'
+            else:
+                #slurp lines into the commit messsages until there's a blank line, a line starting with git-svn-id or a hash
+                commit_msg = ''
+                while not re.match(r'[0-9a-f]{40}', line) and not line.startswith('git-svn-id:'):
+                    if len(line) > 0:
+                        commit_msg = commit_msg + ' ' + line
+                    line = revmap_fd.readline()[0:-1]
+                commit_msg = commit_msg.replace("'", "''") #XXX: make this work on non-sqlite dbs
+
+            if not line.startswith('git-svn-id:'):
+                raise Exception("expected git-svn-id, got '%s'" % line)
+
+            svn_rev_match = re.match(r'^git-svn-id:.*@(\d+) ', line)
+            svn_rev = svn_rev_match.group(1)
+
             insert_query = "INSERT INTO svn_revmap (svn_rev, git_hash, commit_msg) VALUES (%s, '%s', '%s')" % (svn_rev, git_hash, commit_msg)
             self.env.log.debug(insert_query)
             cursor.execute(insert_query)
             insert_count += 1
+            if svn_rev == '1':
+                break
+            git_hash = revmap_fd.readline()[0:-1]
+            while len(git_hash) == 0:
+                git_hash = revmap_fd.readline()[0:-1]
 
         self.env.log.debug("inserted %d mappings into svn_revmap" % insert_count)
 
