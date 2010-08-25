@@ -121,7 +121,7 @@ class GithubPlugin(Component):
         if rev_type == 'svn':
             svn_rev = match.group(0).replace('r','',1)
             git_hash = self._get_git_hash(svn_rev)
-        if git_hash:
+        if self._git_hash_is_valid(git_hash):
             title = shorten_line(self._get_git_title(git_hash))
             return tag.a(match.group(0), href="%s/%s" % (formatter.href.changeset(), git_hash),
                     title=title, class_="changeset")
@@ -170,6 +170,14 @@ class GithubPlugin(Component):
         if row:
             return row[0]
         return None
+
+    def _git_hash_is_valid(self, git_hash):
+        cursor = self.env.get_db_cnx().cursor()
+        row = cursor.execute("SELECT 1 FROM svn_revmap WHERE git_hash LIKE '%s%%';" % git_hash).fetchone()
+        if row:
+            return True
+        self.env.log.debug("REJECTED HASH '%s'", git_hash)
+        return False
 
     def _get_git_title(self, git_hash):
         #TODO: working code
