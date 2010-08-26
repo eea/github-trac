@@ -191,13 +191,6 @@ class GithubPlugin(Component):
     def post_process_request(self, req, template, data, content_type):
         return (template, data, content_type)
 
-    def _get_git_hash(self, svn_rev):
-        cursor = self.env.get_db_cnx().cursor()
-        row = cursor.execute("SELECT git_hash FROM svn_revmap WHERE svn_rev = %s;" % svn_rev).fetchone()
-        if row:
-            return row[0]
-        return None
-
     def _get_commit_data(self, commit_id):
         cursor = self.env.get_db_cnx().cursor()
         if commit_id.startswith('r'):
