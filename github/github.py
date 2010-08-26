@@ -136,24 +136,21 @@ class GithubPlugin(Component):
     def get_wiki_syntax(self):
         yield (r"r\d+",  #svn revision links ("r1432")
             lambda formatter, ns, match:
-                self._format_changeset_link(formatter, 'svn', ns, match))
+                self._format_changeset_link(formatter, ns, match))
         yield (r"[0-9a-fA-F]{5,40}", #git hashes ("eb390eca04394")
             lambda formatter, ns, match:
-                self._format_changeset_link(formatter, 'git', ns, match))
+                self._format_changeset_link(formatter, ns, match))
 
 
     #pre_process_request deals with link resolution
     def get_link_resolvers(self):
         return []
 
-    def _format_changeset_link(self, formatter, rev_type, ns, match):
-        git_hash = match.group(0)
-        if rev_type == 'svn':
-            svn_rev = match.group(0).replace('r','',1)
-            git_hash = self._get_git_hash(svn_rev)
-        if self._git_hash_is_valid(git_hash):
-            title = shorten_line(self._get_git_title(git_hash))
-            return tag.a(match.group(0), href="%s/%s" % (formatter.href.changeset(), git_hash),
+    def _format_changeset_link(self, formatter, ns, match):
+        commit_info = self._get_commit_data(match.group(0))
+        if commit_info:
+            title = shorten_line(commit_info['msg'])
+            return tag.a(match.group(0), href="%s/%s" % (formatter.href.changeset(), commit_info['hash']),
                     title=title, class_="changeset")
         return match.group(0)
 
@@ -200,6 +197,19 @@ class GithubPlugin(Component):
         if row:
             return row[0]
         return None
+
+    def _get_commit_data(self, commit_id):
+        cursor = self.env.get_db_cnx().cursor()
+        if commit_id.startswith('r'):
+            row = cursor.execute("SELECT git_hash, commit_msg FROM svn_revmap WHERE svn_rev = %s;" % commit_id[1:]).fetchone()
+        else:
+            row = cursor.execute("SELECT git_hash, commit_msg FROM svn_revmap WHERE git_hash LIKE '%s%%';" % commit_id).fetchone()
+        if row:
+            return {
+                    'hash': row[0],
+                    'msg' : row[1],
+                    }
+        return False
 
     def _git_hash_is_valid(self, git_hash):
         cursor = self.env.get_db_cnx().cursor()
