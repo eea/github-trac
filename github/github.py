@@ -29,7 +29,7 @@ class GithubPlugin(Component):
     enable_revmap = Option('github', 'enable_revmap',  0, doc = """use the svn->git map when a request looks like a svn changeset """)
 
     SCHEMA = Table('svn_revmap', key = ('svn_rev', 'git_hash'))[
-            Column('svn_rev'),
+            Column('svn_rev', type='int'),
             Column('git_hash'),
             Column('commit_msg'),
             Index(['svn_rev', 'git_hash']),]
@@ -88,6 +88,7 @@ class GithubPlugin(Component):
             cursor.execute(stmt)
 
         insert_count = 0
+        prev_rev = 0
         git_hash = revmap_fd.readline()[0:-1]
         while 1:
             #make sure this line is the hash
@@ -102,20 +103,28 @@ class GithubPlugin(Component):
                 commit_msg = ''
                 while not re.match(r'[0-9a-f]{40}', line) and not line.startswith('git-svn-id:'):
                     if len(line) > 0:
-                        commit_msg = commit_msg + ' ' + line
+                        if commit_msg:
+                            line = commit_msg
+                        else:
+                            commit_msg = commit_msg + ' ' + line
                     line = revmap_fd.readline()[0:-1]
 
             if not line.startswith('git-svn-id:'):
                 raise Exception("expected git-svn-id, got '%s'" % line)
 
             svn_rev_match = re.match(r'^git-svn-id:.*@(\d+) ', line)
-            svn_rev = svn_rev_match.group(1)
+            svn_rev = int(svn_rev_match.group(1))
 
             insert_query = "INSERT INTO svn_revmap (svn_rev, git_hash, commit_msg) VALUES (%s, %s, %s);"
             self.env.log.debug(insert_query % (svn_rev, git_hash, commit_msg))
             cursor.execute(insert_query, (svn_rev, git_hash, commit_msg.decode('utf-8')))
+
+            if prev_rev - 1 != svn_rev:
+                self.env.log.debug("found a gap between r%d and r%d" % (prev_rev, svn_rev))
+            prev_rev = svn_rev
+
             insert_count += 1
-            if svn_rev == '1':
+            if svn_rev == 1:
                 break
             git_hash = revmap_fd.readline()[0:-1]
             while len(git_hash) == 0:
