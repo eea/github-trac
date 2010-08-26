@@ -104,7 +104,6 @@ class GithubPlugin(Component):
                     if len(line) > 0:
                         commit_msg = commit_msg + ' ' + line
                     line = revmap_fd.readline()[0:-1]
-                commit_msg = commit_msg.replace("'", "''") #XXX: make this work on non-sqlite dbs
 
             if not line.startswith('git-svn-id:'):
                 raise Exception("expected git-svn-id, got '%s'" % line)
@@ -112,9 +111,9 @@ class GithubPlugin(Component):
             svn_rev_match = re.match(r'^git-svn-id:.*@(\d+) ', line)
             svn_rev = svn_rev_match.group(1)
 
-            insert_query = "INSERT INTO svn_revmap (svn_rev, git_hash, commit_msg) VALUES (%s, '%s', '%s')" % (svn_rev, git_hash, commit_msg)
-            self.env.log.debug(insert_query)
-            cursor.execute(insert_query)
+            insert_query = "INSERT INTO svn_revmap (svn_rev, git_hash, commit_msg) VALUES (%s, %s, %s);"
+            self.env.log.debug(insert_query % (svn_rev, git_hash, commit_msg))
+            cursor.execute(insert_query, (svn_rev, git_hash, commit_msg.decode('utf-8')))
             insert_count += 1
             if svn_rev == '1':
                 break
