@@ -150,7 +150,7 @@ class GithubPlugin(Component):
         commit_info = self._get_commit_data(match.group(0))
         if commit_info:
             title = shorten_line(commit_info['msg'])
-            return tag.a(match.group(0), href="%s/%s" % (formatter.href.changeset(), commit_info['hash']),
+            return tag.a(match.group(0), href="%s/%s" % (formatter.href.changeset(), commit_info['id']),
                     title=title, class_="changeset")
         return match.group(0)
 
@@ -201,13 +201,15 @@ class GithubPlugin(Component):
     def _get_commit_data(self, commit_id):
         cursor = self.env.get_db_cnx().cursor()
         if commit_id.startswith('r'):
-            row = cursor.execute("SELECT git_hash, commit_msg FROM svn_revmap WHERE svn_rev = %s;" % commit_id[1:]).fetchone()
+            commit_id = commit_id[1:]
+            row = cursor.execute("SELECT git_hash, commit_msg FROM svn_revmap WHERE svn_rev = %s;" % commit_id).fetchone()
         else:
             row = cursor.execute("SELECT git_hash, commit_msg FROM svn_revmap WHERE git_hash LIKE '%s%%';" % commit_id).fetchone()
         if row:
             return {
                     'hash': row[0],
                     'msg' : row[1],
+                    'id'  : commit_id,
                     }
         return False
 
