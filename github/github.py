@@ -27,6 +27,7 @@ class GithubPlugin(Component):
     repo          = Option('trac',   'repository_dir' '', doc = """This is your repository dir""")
     revmap        = Option('github', 'svn_revmap',    '', doc = """a plaintext file mapping svn revisions to git hashes""")
     enable_revmap = Option('github', 'enable_revmap',  0, doc = """use the svn->git map when a request looks like a svn changeset """)
+    long_tooltips = Option('github', 'long_tooltips',  0, doc = """don't shorten tooltips""")
 
     SCHEMA = Table('svn_revmap', key = ('svn_rev', 'git_hash'))[
             Column('svn_rev', type='int'),
@@ -106,7 +107,7 @@ class GithubPlugin(Component):
                         if commit_msg:
                             line = commit_msg
                         else:
-                            commit_msg = commit_msg + ' ' + line
+                            commit_msg = commit_msg + "\n" + line
                     line = revmap_fd.readline()[0:-1]
 
             if not line.startswith('git-svn-id:'):
@@ -148,8 +149,12 @@ class GithubPlugin(Component):
 
     def _format_changeset_link(self, formatter, ns, match):
         commit_info = self._get_commit_data(match.group(0))
+        self.env.log.debug("long tooltips: %s", self.long_tooltips)
         if commit_info:
-            title = shorten_line(commit_info['msg'])
+            if int(self.long_tooltips):
+                title = commit_info['msg']
+            else:
+                title = shorten_line(commit_info['msg'])
             return tag.a(match.group(0), href="%s/%s" % (formatter.href.changeset(), commit_info['id']),
                     title=title, class_="changeset")
         return match.group(0)
