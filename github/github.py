@@ -44,12 +44,12 @@ class GithubPlugin(Component):
 
     # IEnvironmentSetupParticpant methods
     def environment_created(self):
-        if self.enable_revmap:
+        if int(self.enable_revmap):
             self._upgrade_db(self.env.get_db_cnx())
 
     #return true if the db table doesn't exist or needs to be updated
     def environment_needs_upgrade(self, db):
-        if self.enable_revmap == 0:
+        if int(self.enable_revmap) == 0:
             return False
         cursor = db.cursor()
         try:
@@ -63,7 +63,7 @@ class GithubPlugin(Component):
             return True
 
     def upgrade_environment(self, db):
-        if self.enable_revmap:
+        if int(self.enable_revmap):
             self._upgrade_db(db)
 
     def _upgrade_db(self, db):
@@ -220,7 +220,7 @@ class GithubPlugin(Component):
         url = req.path_info.replace('/changeset/', '')
         self.env.log.debug("url is %s" % url)
         svn_rev_match = re.match( '^([0-9]{1,6})([^0-9a-fA-F]|$)', url)
-        if svn_rev_match and self.enable_revmap:
+        if svn_rev_match and int(self.enable_revmap):
             svn_rev = svn_rev_match.group(1)
             commit_data = self._get_commit_data('r'+svn_rev)
             if commit_data:
