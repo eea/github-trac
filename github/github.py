@@ -222,10 +222,10 @@ class GithubPlugin(Component):
         svn_rev_match = re.match( '^([0-9]{1,6})([^0-9a-fA-F]|$)', url)
         if svn_rev_match and self.enable_revmap:
             svn_rev = svn_rev_match.group(1)
-            git_hash = self._get_git_hash(svn_rev)
-            if git_hash:
-                url = git_hash
-                self.env.log.debug("mapping svn revision %s to github hash %s" % (svn_rev, git_hash));
+            commit_data = self._get_commit_data('r'+svn_rev)
+            if commit_data:
+                url = commit_data['hash']
+                self.env.log.debug("mapping svn revision %s to github hash %s" % (svn_rev, commit_data['hash']));
             else:
                 self.env.log.debug("couldn't map svn revision %s", svn_rev);
                 req.redirect(self.browser)
