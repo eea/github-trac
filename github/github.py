@@ -211,20 +211,6 @@ class GithubPlugin(Component):
                     }
         return False
 
-    def _git_hash_is_valid(self, git_hash):
-        cursor = self.env.get_db_cnx().cursor()
-        row = cursor.execute("SELECT 1 FROM svn_revmap WHERE git_hash LIKE '%s%%';" % git_hash).fetchone()
-        if row:
-            return True
-        return False
-
-    def _get_git_title(self, git_hash):
-        cursor = self.env.get_db_cnx().cursor()
-        row = cursor.execute("SELECT commit_msg FROM svn_revmap WHERE git_hash LIKE '%s%%';" % git_hash).fetchone()
-        if row:
-            return row[0]
-        return "<no commit message>"
-
     def processChangesetURL(self, req):
         self.env.log.debug("processChangesetURL")
         browser = self.browser.replace('/tree/master', '/commit/')
