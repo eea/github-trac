@@ -105,6 +105,10 @@ class CommitHook:
         msg = "%s \n %s" % (msg, note)
         author = commit['author']['name']
         timestamp = datetime.now(utc)
+        if self.enable_revmap:
+            cursor = self.env.get_db_cnx().cursor()
+            cursor.execute("INSERT INTO svn_revmap (svn_rev, git_hash, commit_msg) VALUES (0, %s, %s);",
+                    (commit['id'], commit['message'))
         
         cmd_groups = command_re.findall(msg)
         self.env.log.debug("Function Handlers: %s" % cmd_groups)
