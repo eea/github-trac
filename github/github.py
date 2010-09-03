@@ -5,7 +5,7 @@ from trac.web.api import IRequestFilter, IRequestHandler, Href
 from trac.env import IEnvironmentSetupParticipant
 from trac.util.translation import _
 from trac.util.text import shorten_line
-from trac.db import Table, Column, Index
+from trac.db import Table, Column, Index, DatabaseManager
 from trac.wiki import IWikiSyntaxProvider
 from genshi.builder import tag
 from hook import CommitHook
@@ -29,11 +29,14 @@ class GithubPlugin(Component):
     enable_revmap = Option('github', 'enable_revmap',  0, doc = """use the svn->git map when a request looks like a svn changeset """)
     long_tooltips = Option('github', 'long_tooltips',  0, doc = """don't shorten tooltips""")
 
-    SCHEMA = Table('svn_revmap', key = ('svn_rev', 'git_hash'))[
-            Column('svn_rev', type='int'),
-            Column('git_hash'),
-            Column('commit_msg'),
-            Index(['svn_rev', 'git_hash']),]
+    SCHEMA = [
+            Table('svn_revmap', key = ('svn_rev', 'git_hash'))[
+                Column('svn_rev', type='int'),
+                Column('git_hash'),
+                Column('commit_msg'),
+                Index(['svn_rev', 'git_hash']),
+                ]
+            ]
 
 
     def __init__(self):
@@ -79,17 +82,14 @@ class GithubPlugin(Component):
         try:
             cursor.execute("DROP TABLE svn_revmap;")
         except:
-            pass
+            db.rollback()
 
-        try:
-            from trac.db import DatabaseManager
-            db_backend, ignored = DatabaseManager(self.env)._get_connector()
-        except ImportError:
-            db_backend = self.env.get_db_cnx()
-
-        for stmt in db_backend.to_sql(self.SCHEMA):
-            self.env.log.debug(stmt)
-            cursor.execute(stmt)
+        db_backend, unused = DatabaseManager(self.env)._get_connector()
+        cursor = db.cursor()
+        for table in self.SCHEMA:
+            for stmt in db_backend.to_sql(table):
+                self.env.log.debug(stmt)
+                cursor.execute(stmt)
 
         insert_count = 0
         prev_rev = 0
