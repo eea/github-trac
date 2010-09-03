@@ -68,6 +68,8 @@ class GithubPlugin(Component):
 
     def _upgrade_db(self, db):
         #open the revision map
+        if int(self.enable_revmap) == 0:
+            return 0
         try:
             revmap_fd = open(self.revmap, 'rb')
         except IOError:
@@ -148,6 +150,11 @@ class GithubPlugin(Component):
         return []
 
     def _format_changeset_link(self, formatter, ns, match):
+        self.env.log.debug("format changeset link")
+        if int(self.enable_revmap) == 0:
+            self.env.log.debug("revmap disabled, skipping thingy")
+            return match.group(0)
+        self.env.log.debug("revmap enabled: formatting links")
         commit_info = self._get_commit_data(match.group(0))
         self.env.log.debug("long tooltips: %s", self.long_tooltips)
         if commit_info:
@@ -197,6 +204,8 @@ class GithubPlugin(Component):
         return (template, data, content_type)
 
     def _get_commit_data(self, commit_id):
+        if int(self.enable_revmap) == 0:
+            return False
         cursor = self.env.get_db_cnx().cursor()
         if commit_id.startswith('r'):
             commit_id = commit_id[1:]
