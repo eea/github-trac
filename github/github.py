@@ -207,18 +207,17 @@ class GithubPlugin(Component):
     def _get_commit_data(self, commit_id):
         if int(self.enable_revmap) == 0:
             return False
-        self.env.log.debug("looking up revision: %s" % commit_id)
+        self.env.log.debug("looking up commit: %s" % commit_id)
         cursor = self.env.get_db_cnx().cursor()
-        try:
-            if commit_id.startswith('r'):
-                commit_id = commit_id[1:]
-                row = cursor.execute("SELECT git_hash, commit_msg FROM svn_revmap WHERE svn_rev = %s;" % commit_id).fetchone()
-                self.env.log.debug("running query: SELECT git_hash, commit_msg FROM svn_revmap WHERE svn_rev = %s;" % commit_id)
-            else:
-                row = cursor.execute("SELECT git_hash, commit_msg FROM svn_revmap WHERE git_hash LIKE '%s%%';" % commit_id).fetchone()
-                self.env.log.debug("running query: SELECT git_hash, commit_msg FROM svn_revmap WHERE git_hash LIKE '%s%%';" % commit_id)
-        except AttributeError:
-            return False
+        if commit_id.startswith('r'):
+            commit_id = commit_id[1:]
+            self.env.log.debug("running query: SELECT git_hash, commit_msg FROM svn_revmap WHERE svn_rev = %s" % commit_id)
+            cursor.execute("SELECT git_hash, commit_msg FROM svn_revmap WHERE svn_rev = %s", (commit_id,))
+            row = cursor.fetchone();
+        else:
+            self.env.log.debug("running query: SELECT git_hash, commit_msg FROM svn_revmap WHERE git_hash LIKE '%s%%'" % commit_id)
+            cursor.execute("SELECT git_hash, commit_msg FROM svn_revmap WHERE git_hash LIKE '%s%%'" % (commit_id,))
+            row = cursor.fetchone()
         if row:
             return {
                     'hash': row[0],
