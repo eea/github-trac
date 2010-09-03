@@ -60,6 +60,7 @@ class GithubPlugin(Component):
                 return False
             return True
         except:
+            db.rollback()
             return True
 
     def upgrade_environment(self, db):
