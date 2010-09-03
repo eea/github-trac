@@ -138,10 +138,10 @@ class GithubPlugin(Component):
 
     # IWikiSyntaxProvider methods
     def get_wiki_syntax(self):
-        yield (r"r\d+",  #svn revision links ("r1432")
+        yield (r"\br\d+\b",  #svn revision links ("r1432")
             lambda formatter, ns, match:
                 self._format_changeset_link(formatter, ns, match))
-        yield (r"[0-9a-fA-F]{5,40}", #git hashes ("eb390eca04394")
+        yield (r"\b[0-9a-fA-F]{5,40}\b", #git hashes ("eb390eca04394")
             lambda formatter, ns, match:
                 self._format_changeset_link(formatter, ns, match))
 
