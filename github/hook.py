@@ -96,7 +96,7 @@ class CommitHook:
     def __init__(self, env):
         self.env = env
 
-    def process(self, commit, status):
+    def process(self, commit, status, enable_revmap):
         self.closestatus = status
         
         msg = commit['message']
@@ -105,10 +105,13 @@ class CommitHook:
         msg = "%s \n %s" % (msg, note)
         author = commit['author']['name']
         timestamp = datetime.now(utc)
-        if int(self.enable_revmap):
-            cursor = self.env.get_db_cnx().cursor()
+        if int(enable_revmap):
+            self.env.log.debug("adding commit %s to revmap", commit['id'])
+            db = self.env.get_db_cnx()
+            cursor = db.cursor()
             cursor.execute("INSERT INTO svn_revmap (svn_rev, git_hash, commit_msg) VALUES (0, %s, %s);",
                     (commit['id'], commit['message']))
+            db.commit()
         
         cmd_groups = command_re.findall(msg)
         self.env.log.debug("Function Handlers: %s" % cmd_groups)
