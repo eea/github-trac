@@ -294,4 +294,7 @@ class GithubPlugin(Component):
             except:
               self.env.log.debug("git fetch failed!")
 
+        self.env.log.debug("Redirect URL: %s" % req)
+        req.redirect(req)
+
 
