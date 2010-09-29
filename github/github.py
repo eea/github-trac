@@ -107,8 +107,8 @@ class GithubPlugin(Component):
                 commit_msg = ''
                 while not re.match(r'[0-9a-f]{40}', line) and not line.startswith('git-svn-id:'):
                     if len(line) > 0:
-                        if commit_msg:
-                            line = commit_msg
+                        if not commit_msg:
+                            commit_msg = line
                         else:
                             commit_msg = commit_msg + "\n" + line
                     line = revmap_fd.readline()[0:-1]
