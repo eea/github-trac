@@ -166,6 +166,10 @@ class GithubPlugin(Component):
                 title = shorten_line(commit_data[0]['msg'])
             return tag.a(match.group(0), href="%s/%s" % (formatter.href.changeset(), commit_data[0]['id']),
                     title=title, class_="changeset")
+        elif len(commit_data) > 1:
+            #try to figure out something better when an id is ambiguous
+            return match.group(0)
+
         return match.group(0)
 
     # IRequestHandler methods
