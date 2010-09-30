@@ -158,12 +158,13 @@ class GithubPlugin(Component):
         self.env.log.debug("revmap enabled: formatting links")
         commit_info = self._get_commit_data(match.group(0))
         self.env.log.debug("long tooltips: %s", self.long_tooltips)
-        if commit_info:
+        if len(commit_info) == 1:
+            self.env.log.debug(commit_info)
             if int(self.long_tooltips):
-                title = commit_info['msg']
+                title = commit_info[0]['msg']
             else:
-                title = shorten_line(commit_info['msg'])
-            return tag.a(match.group(0), href="%s/%s" % (formatter.href.changeset(), commit_info['id']),
+                title = shorten_line(commit_info[0]['msg'])
+            return tag.a(match.group(0), href="%s/%s" % (formatter.href.changeset(), commit_info[0]['id']),
                     title=title, class_="changeset")
         return match.group(0)
 
@@ -213,18 +214,20 @@ class GithubPlugin(Component):
             commit_id = commit_id[1:]
             self.env.log.debug("running query: SELECT git_hash, commit_msg FROM svn_revmap WHERE svn_rev = %s" % commit_id)
             cursor.execute("SELECT git_hash, commit_msg FROM svn_revmap WHERE svn_rev = %s", (commit_id,))
-            row = cursor.fetchone();
+            rows = cursor.fetchmany();
         else:
             self.env.log.debug("running query: SELECT git_hash, commit_msg FROM svn_revmap WHERE git_hash LIKE '%s%%'" % commit_id)
             cursor.execute("SELECT git_hash, commit_msg FROM svn_revmap WHERE git_hash LIKE '%s%%'" % (commit_id,))
-            row = cursor.fetchone()
-        if row:
-            return {
-                    'hash': row[0],
-                    'msg' : row[1],
-                    'id'  : commit_id,
-                    }
-        return False
+            rows = cursor.fetchmany()
+        results = []
+        for row in rows:
+            #hash is what's in the db, id is the string the user used (usually not the full hash)
+            d = {'hash': row[0],
+                 'msg' : row[1],
+                 'id'  : commit_id,
+            }
+            results.append(d)
+        return results
 
     def processChangesetURL(self, req):
         self.env.log.debug("processChangesetURL")
@@ -236,9 +239,10 @@ class GithubPlugin(Component):
         if svn_rev_match and int(self.enable_revmap):
             svn_rev = svn_rev_match.group(1)
             commit_data = self._get_commit_data('r'+svn_rev)
-            if commit_data:
-                url = commit_data['hash']
-                self.env.log.debug("mapping svn revision %s to github hash %s" % (svn_rev, commit_data['hash']));
+            if len(commit_data) == 1:
+                i = commit_data[o]
+                url = i['hash']
+                self.env.log.debug("mapping svn revision %s to github hash %s" % (svn_rev, url));
             else:
                 self.env.log.debug("couldn't map svn revision %s", svn_rev);
                 req.redirect(self.browser)
