@@ -110,7 +110,7 @@ class GithubPlugin(Component):
                         if not commit_msg:
                             commit_msg = line
                         else:
-                            commit_msg = commit_msg + "\n" + line
+                            commit_msg = commit_msg + " " + line
                     line = revmap_fd.readline()[0:-1]
 
             if not line.startswith('git-svn-id:'):
@@ -157,7 +157,6 @@ class GithubPlugin(Component):
             return match.group(0)
         self.env.log.debug("revmap enabled: formatting links")
         commit_data = self._get_commit_data(match.group(0))
-        self.env.log.debug("long tooltips: %s", self.long_tooltips)
         if len(commit_data) == 1:
             self.env.log.debug(commit_data)
             if int(self.long_tooltips):
