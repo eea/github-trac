@@ -240,7 +240,7 @@ class GithubPlugin(Component):
             svn_rev = svn_rev_match.group(1)
             commit_data = self._get_commit_data('r'+svn_rev)
             if len(commit_data) == 1:
-                i = commit_data[o]
+                i = commit_data[0]
                 url = i['hash']
                 self.env.log.debug("mapping svn revision %s to github hash %s" % (svn_rev, url));
             else:
