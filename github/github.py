@@ -247,10 +247,12 @@ class GithubPlugin(Component):
                 i = commit_data[0]
                 url = i['hash']
                 self.env.log.debug("mapping svn revision %s to github hash %s" % (svn_rev, url));
-            else:
+            elif len(commit_data) == 0:
                 self.env.log.debug("couldn't map svn revision %s", svn_rev);
                 req.redirect(self.browser)
-            #XXX: fail gracefully if it doesn't exist
+            else:
+                self.env.log.debug("svn revision maps to multiple git commit ids.  This shouldn't happen.")
+                req.redirect(self.browser)
 
         if not url:
             browser = self.browser
