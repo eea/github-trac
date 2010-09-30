@@ -156,15 +156,15 @@ class GithubPlugin(Component):
             self.env.log.debug("revmap disabled, skipping thingy")
             return match.group(0)
         self.env.log.debug("revmap enabled: formatting links")
-        commit_info = self._get_commit_data(match.group(0))
+        commit_data = self._get_commit_data(match.group(0))
         self.env.log.debug("long tooltips: %s", self.long_tooltips)
-        if len(commit_info) == 1:
-            self.env.log.debug(commit_info)
+        if len(commit_data) == 1:
+            self.env.log.debug(commit_data)
             if int(self.long_tooltips):
-                title = commit_info[0]['msg']
+                title = commit_data[0]['msg']
             else:
-                title = shorten_line(commit_info[0]['msg'])
-            return tag.a(match.group(0), href="%s/%s" % (formatter.href.changeset(), commit_info[0]['id']),
+                title = shorten_line(commit_data[0]['msg'])
+            return tag.a(match.group(0), href="%s/%s" % (formatter.href.changeset(), commit_data[0]['id']),
                     title=title, class_="changeset")
         return match.group(0)
 
