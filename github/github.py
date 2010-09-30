@@ -214,11 +214,11 @@ class GithubPlugin(Component):
             commit_id = commit_id[1:]
             self.env.log.debug("running query: SELECT git_hash, commit_msg FROM svn_revmap WHERE svn_rev = %s" % commit_id)
             cursor.execute("SELECT git_hash, commit_msg FROM svn_revmap WHERE svn_rev = %s", (commit_id,))
-            rows = cursor.fetchmany();
+            rows = cursor.fetchmany(5);
         else:
             self.env.log.debug("running query: SELECT git_hash, commit_msg FROM svn_revmap WHERE git_hash LIKE '%s%%'" % commit_id)
             cursor.execute("SELECT git_hash, commit_msg FROM svn_revmap WHERE git_hash LIKE '%s%%'" % (commit_id,))
-            rows = cursor.fetchmany()
+            rows = cursor.fetchmany(5)
         results = []
         for row in rows:
             #hash is what's in the db, id is the string the user used (usually not the full hash)
