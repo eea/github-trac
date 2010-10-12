@@ -299,7 +299,10 @@ class GithubPlugin(Component):
             repo = Git(self.repo)
 
             try:
+              self.env.log.debug("Fetching repo %s" % self.repo)
               repo.execute(['git', 'fetch'])
+              self.env.log.debug("Resyncing local repo")
+              self.env.get_repository('').sync()
             except:
               self.env.log.debug("git fetch failed!")
 
