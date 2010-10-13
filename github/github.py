@@ -187,6 +187,10 @@ class GithubPlugin(Component):
     def process_request(self, req):
         if self.processHook:
             self.processCommitHook(req)
+        
+        req.send_response()
+        req.write('')
+        raise RequestDone
 
     # This has to be done via the pre_process_request handler
     # Seems that the /browser request doesn't get routed to match_request :(
