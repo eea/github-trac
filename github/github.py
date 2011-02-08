@@ -68,7 +68,7 @@ class GithubPlugin(Component):
         browser = self.browser.replace('/tree/master', '/commit/')
         
         commitinfo = req.path_info.replace('/changeset/', '').partition("/")
-        url = "/%s" % (commitinfo[2] + commitinfo[1] + "commit" + commitinfo[1] + commitinfo[0]))
+        url = "/%s" % (commitinfo[2] + commitinfo[1] + "commit" + commitinfo[1] + commitinfo[0])
         if not url:
             browser = self.browser
             url = ''
