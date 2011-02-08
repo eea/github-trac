@@ -67,7 +67,8 @@ class GithubPlugin(Component):
         self.env.log.debug("processChangesetURL")
         browser = self.browser.replace('/tree/master', '/commit/')
         
-        url = req.path_info.replace('/changeset/', '')
+        commitinfo = req.path_info.replace('/changeset/', '').partition("/")
+		url = "/%s" % (commitinfo[2] + commitinfo[1] + "commit" + commitinfo[1] + commitinfo[0]))
         if not url:
             browser = self.browser
             url = ''
