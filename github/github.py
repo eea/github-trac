@@ -107,13 +107,13 @@ class GithubPlugin(Component):
          
         if data:
             jsondata = simplejson.loads(data)
-			reponame = jsondata['repository']['name']
+            reponame = jsondata['repository']['name']
             for i in jsondata['commits']:
                 self.hook.process(i, status)
 
 
         if self.autofetch:
-			repodir = "%s/%s" % (self.repo, reponame)
+            repodir = "%s/%s" % (self.repo, reponame)
             repo = Git(repodir)
 
             try:
