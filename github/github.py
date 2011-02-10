@@ -114,7 +114,7 @@ class GithubPlugin(Component):
 
         if self.autofetch:
             repodir = "%s/%s" % (self.repo, reponame)
-			self.env.log.debug("Autofetching: %s" % repodir)
+            self.env.log.debug("Autofetching: %s" % repodir)
             repo = Git(repodir)
 
             try:
