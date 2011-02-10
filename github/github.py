@@ -109,7 +109,7 @@ class GithubPlugin(Component):
             jsondata = simplejson.loads(data)
             reponame = jsondata['repository']['name']
             for i in jsondata['commits']:
-                self.hook.process(i, status)
+                self.hook.process(i, status, reponame)
 
 
         if self.autofetch:

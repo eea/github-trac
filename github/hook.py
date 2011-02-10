@@ -96,12 +96,12 @@ class CommitHook:
     def __init__(self, env):
         self.env = env
 
-    def process(self, commit, status):
+    def process(self, commit, status, reponame):
         self.closestatus = status
         
         msg = commit['message']
         self.env.log.debug("Processing Commit: %s", msg)
-        note = "Changeset: %s" % commit['id']
+        note = "Changeset: %s/%s" % (commit['id'], reponame)
         msg = "%s \n %s" % (msg, note)
         author = commit['author']['name']
         timestamp = datetime.now(utc)
