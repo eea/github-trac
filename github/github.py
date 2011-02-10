@@ -16,7 +16,7 @@ class GithubPlugin(Component):
     closestatus = Option('github', 'closestatus', '', doc="""This is the status used to close a ticket. It defaults to closed.""")
     browser = Option('github', 'browser', '', doc="""Place your GitHub Source Browser URL here to have the /browser entry point redirect to GitHub.""")
     autofetch = Option('github', 'autofetch', '', doc="""Should we auto fetch the repo when we get a commit hook from GitHub.""")
-    repo = Option('trac', 'repository_dir' '', doc="""This is your repository dir""")
+    repo = Option('github', 'git_root' '', doc="""This is your root git dir""")
 
     def __init__(self):
         self.hook = CommitHook(self.env)
@@ -107,13 +107,14 @@ class GithubPlugin(Component):
          
         if data:
             jsondata = simplejson.loads(data)
-
+			reponame = jsondata['repository']['name']
             for i in jsondata['commits']:
                 self.hook.process(i, status)
 
 
         if self.autofetch:
-            repo = Git(self.repo)
+			repodir = "%s/%s" % (self.repo, reponame)
+            repo = Git(repodir)
 
             try:
               repo.execute(['git', 'fetch'])
