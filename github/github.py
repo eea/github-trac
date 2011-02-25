@@ -52,9 +52,12 @@ class GithubPlugin(Component):
                 self.processBrowserURL(req)
 
             serve2 = req.path_info.startswith('/changeset')
-            self.env.log.debug("Handle Pre-Request /changeset: %s" % serve2)
-            if serve2:
-                self.processChangesetURL(req)
+            repoinfo = serve2.path_info.replace('/changeset/', '').partition("/")
+            repo = self.env.get_repository(repoinfo[2])
+            if repo.__class__.__name__ == "GitRepository":
+                self.env.log.debug("Handle Pre-Request /changeset: %s" % serve2)
+                if serve2:
+                    self.processChangesetURL(req)
 
         return handler
 
