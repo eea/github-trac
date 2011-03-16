@@ -71,7 +71,7 @@ from trac.config import Option, IntOption, ListOption, BoolOption
 
 ticket_prefix = '(?:#|(?:ticket|issue|bug)[: ]?)'
 ticket_reference = ticket_prefix + '[0-9]+'
-ticket_command =  (r'(?P<action>[A-Za-z]*).?'
+ticket_command =  (r'(?P<action>[A-Za-z]*):?.?'
                    '(?P<ticket>%s(?:(?:[, &]*|[ ]?and[ ]?)%s)*)' %
                    (ticket_reference, ticket_reference))
      
