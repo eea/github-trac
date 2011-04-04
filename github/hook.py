@@ -71,7 +71,7 @@ from trac.config import Option, IntOption, ListOption, BoolOption
 
 ticket_prefix = '(?:#|(?:ticket|issue|bug)[: ]?)'
 ticket_reference = ticket_prefix + '[0-9]+'
-ticket_command =  (r'(?P<action>[A-Za-z]*).?'
+ticket_command =  (r'(?P<action>[A-Za-z]*):?.?'
                    '(?P<ticket>%s(?:(?:[, &]*|[ ]?and[ ]?)%s)*)' %
                    (ticket_reference, ticket_reference))
      
@@ -102,7 +102,7 @@ class CommitHook:
         msg = commit['message']
         self.env.log.debug("Processing Commit: %s", msg)
         note = "Changeset: %s" % commit['id']
-        msg = "%s \n %s" % (msg, note)
+        msg = "%s[[BR]]\n%s" % (msg, note)
         author = commit['author']['name']
         timestamp = datetime.now(utc)
         if int(enable_revmap):
