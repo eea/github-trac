@@ -3,6 +3,7 @@ from trac.resource import ResourceNotFound
 from trac.config import Option, IntOption, ListOption, BoolOption
 from trac.web.api import IRequestFilter, IRequestHandler, Href, RequestDone
 from trac.env import IEnvironmentSetupParticipant
+from trac.versioncontrol import RepositoryManager
 from trac.util.translation import _
 from trac.util.text import shorten_line
 from trac.db import Table, Column, Index, DatabaseManager
@@ -11,10 +12,11 @@ from genshi.builder import tag
 from hook import CommitHook
 
 import re
+import os.path
 import simplejson
 import re
 
-from git import Git
+from git import Git, GitCommandError
 
 class GithubPlugin(Component):
     implements(IRequestHandler, IRequestFilter, IEnvironmentSetupParticipant,
@@ -25,7 +27,8 @@ class GithubPlugin(Component):
     closestatus = Option('github', 'closestatus', '', doc="""This is the status used to close a ticket. It defaults to closed.""")
     browser = Option('github', 'browser', '', doc="""Place your GitHub Source Browser URL here to have the /browser entry point redirect to GitHub.""")
     autofetch = Option('github', 'autofetch', '', doc="""Should we auto fetch the repo when we get a commit hook from GitHub.""")
-    repo = Option('trac', 'repository_dir' '', doc="""This is your repository dir""")
+    # TODO: Removed following line, obsolete
+	# repo = Option('trac', 'repository_dir' '', doc="""This is your repository dir""")
     revmap        = Option('github', 'svn_revmap',    '', doc = """a plaintext file mapping svn revisions to git hashes""")
     enable_revmap = Option('github', 'enable_revmap',  0, doc = """use the svn->git map when a request looks like a svn changeset """)
     long_tooltips = Option('github', 'long_tooltips',  0, doc = """don't shorten tooltips""")
@@ -188,7 +191,7 @@ class GithubPlugin(Component):
     def process_request(self, req):
         if self.processHook:
             self.processCommitHook(req)
-
+		# TODO: Verify this code (and redirect in hook.py also)
         req.send_response(204)
         req.send_header('Content-Length', 0)
         req.write('')
@@ -207,9 +210,9 @@ class GithubPlugin(Component):
             repoinfo = req.path_info.replace('/changeset/', '').partition("/")
             repo = self.env.get_repository(repoinfo[2])
             if repo.__class__.__name__ == "GitRepository":
-                self.env.log.debug("Handle Pre-Request /changeset: %s" % serve2)
-                if serve2:
-                    self.processChangesetURL(req)
+            self.env.log.debug("Handle Pre-Request /changeset: %s" % serve2)
+            if serve2:
+                self.processChangesetURL(req)
 
         return handler
 
@@ -260,12 +263,14 @@ class GithubPlugin(Component):
 
     def processBrowserURL(self, req):
         self.env.log.debug("processBrowserURL")
-        browser = self.browser.replace('/master', '/')
         rev = req.args.get('rev')
-        
-        url = req.path_info.replace('/browser', '')
-        if not rev:
+        if rev:
+            browser = self.browser.replace('/master', '/')
+        else:
             rev = ''
+            browser = self.browser
+
+        url = req.path_info.replace('/browser', '')
 
         redirect = '%s%s%s' % (browser, rev, url)
         self.env.log.debug("Redirect URL: %s" % redirect)
@@ -282,7 +287,11 @@ class GithubPlugin(Component):
             status = 'closed'
 
         if self.autofetch:
-            repodir = "%s/%s" % (self.repo, reponame)
+            repodir = RepositoryManager(self.env).repository_dir
+            if not os.path.isabs(repodir):
+                repodir = os.path.join(self.env.path, repodir)
+            # TODO: This was the previous code, the repo options is probably unecessary now.
+			# repodir = "%s/%s" % (self.repo, reponame)
             self.env.log.debug("Autofetching: %s" % repodir)
             repo = Git(repodir)
 
@@ -298,13 +307,13 @@ class GithubPlugin(Component):
               self.env.log.error("git fetch failed!")
 
         data = req.args.get('payload')
-
+         
         if data:
             jsondata = simplejson.loads(data)
             reponame = jsondata['repository']['name']
 
             for i in jsondata['commits']:
-                self.hook.process(i, status, self.enable_revmap)
+                self.hook.process(i, status, self.enable_revmap,reponame)
 
        self.env.log.debug("Redirect URL: %s" % req)
        req.redirect(self.browser)
