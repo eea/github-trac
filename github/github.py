@@ -1,7 +1,7 @@
 from trac.core import *
 from trac.resource import ResourceNotFound
 from trac.config import Option, IntOption, ListOption, BoolOption
-from trac.web.api import IRequestFilter, IRequestHandler, Href
+from trac.web.api import IRequestFilter, IRequestHandler, Href, RequestDone
 from trac.env import IEnvironmentSetupParticipant
 from trac.util.translation import _
 from trac.util.text import shorten_line
@@ -10,6 +10,7 @@ from trac.wiki import IWikiSyntaxProvider
 from genshi.builder import tag
 from hook import CommitHook
 
+import re
 import simplejson
 import re
 
@@ -18,13 +19,13 @@ from git import Git
 class GithubPlugin(Component):
     implements(IRequestHandler, IRequestFilter, IEnvironmentSetupParticipant,
             IWikiSyntaxProvider)
-
-
-    key           = Option('github', 'apitoken',      '', doc = """Your GitHub API Token found here: https://github.com/account, """)
-    closestatus   = Option('github', 'closestatus',   '', doc = """This is the status used to close a ticket. It defaults to closed.""")
-    browser       = Option('github', 'browser',       '', doc = """Place your GitHub Source Browser URL here to have the /browser entry point redirect to GitHub.""")
-    autofetch     = Option('github', 'autofetch',     '', doc = """Should we auto fetch the repo when we get a commit hook from GitHub.""")
-    repo          = Option('trac',   'repository_dir' '', doc = """This is your repository dir""")
+    
+    
+    key = Option('github', 'apitoken', '', doc="""Your GitHub API Token found here: https://github.com/account, """)
+    closestatus = Option('github', 'closestatus', '', doc="""This is the status used to close a ticket. It defaults to closed.""")
+    browser = Option('github', 'browser', '', doc="""Place your GitHub Source Browser URL here to have the /browser entry point redirect to GitHub.""")
+    autofetch = Option('github', 'autofetch', '', doc="""Should we auto fetch the repo when we get a commit hook from GitHub.""")
+    repo = Option('trac', 'repository_dir' '', doc="""This is your repository dir""")
     revmap        = Option('github', 'svn_revmap',    '', doc = """a plaintext file mapping svn revisions to git hashes""")
     enable_revmap = Option('github', 'enable_revmap',  0, doc = """use the svn->git map when a request looks like a svn changeset """)
     long_tooltips = Option('github', 'long_tooltips',  0, doc = """don't shorten tooltips""")
@@ -49,7 +50,7 @@ class GithubPlugin(Component):
     def environment_created(self):
         if int(self.enable_revmap):
             self._upgrade_db(self.env.get_db_cnx())
-
+    
     #return true if the db table doesn't exist or needs to be updated
     def environment_needs_upgrade(self, db):
         if int(self.enable_revmap) == 0:
@@ -183,12 +184,13 @@ class GithubPlugin(Component):
 
         self.env.log.debug("Handle Request: %s" % serve)
         return serve
-
+    
     def process_request(self, req):
         if self.processHook:
             self.processCommitHook(req)
         
-        req.send_response()
+        req.send_response(204)
+        req.send_header('Content-Length', 0)
         req.write('')
         raise RequestDone
 
@@ -239,7 +241,7 @@ class GithubPlugin(Component):
     def processChangesetURL(self, req):
         self.env.log.debug("processChangesetURL")
         browser = self.browser.replace('/tree/master', '/commit/')
-
+        
         url = req.path_info.replace('/changeset/', '')
         self.env.log.debug("url is %s" % url)
         svn_rev_match = re.match( '^([0-9]{1,6})([^0-9a-fA-F]|$)', url)
@@ -272,7 +274,7 @@ class GithubPlugin(Component):
         self.env.log.debug("processBrowserURL")
         browser = self.browser.replace('/master', '/')
         rev = req.args.get('rev')
-
+        
         url = req.path_info.replace('/browser', '')
         if not rev:
             rev = ''
@@ -283,7 +285,7 @@ class GithubPlugin(Component):
 
         req.redirect(redirect)
 
-
+        
 
     def processCommitHook(self, req):
         self.env.log.debug("processCommitHook")
@@ -291,26 +293,27 @@ class GithubPlugin(Component):
         if not status:
             status = 'closed'
 
-        data = req.args.get('payload')
+        if self.autofetch:
+            repo = Git(self.repo)
 
+            try:
+              self.env.log.debug("Fetching repo %s" % self.repo)
+              repo.execute(['git', 'fetch'])
+              try:
+                self.env.log.debug("Resyncing local repo")
+                self.env.get_repository('').sync()
+              except:
+                self.env.log.error("git sync failed!")
+            except:
+              self.env.log.error("git fetch failed!")
+
+        data = req.args.get('payload')
+         
         if data:
             jsondata = simplejson.loads(data)
 
             for i in jsondata['commits']:
                 self.hook.process(i, status, self.enable_revmap)
 
-        if int(self.autofetch):
-            repo = Git(self.repo)
-
-            try:
-              self.env.log.debug("Fetching repo %s" % self.repo)
-              repo.execute(['git', 'fetch'])
-              self.env.log.debug("Resyncing local repo")
-              self.env.get_repository('').sync()
-            except:
-              self.env.log.debug("git fetch failed!")
-
-        self.env.log.debug("Redirect URL: %s" % req)
-        req.redirect(self.browser)
-
-
+       self.env.log.debug("Redirect URL: %s" % req)
+       req.redirect(self.browser)
