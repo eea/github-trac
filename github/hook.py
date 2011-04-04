@@ -104,7 +104,8 @@ class CommitHook:
         msg = commit['message']
         self.env.log.debug("Processing Commit: %s", msg)
         note = "Changeset: [/changeset/%s %s]" % (commit['id'], commit['id'])
-        msg = "%s \n %s" % (msg, note)
+        url = "URL: %s" % commit['url']
+        msg = "%s \n * %s \n * %s" % (msg, note, url)
         author = commit['author']['name']
         timestamp = datetime.now(utc)
         if int(enable_revmap):
