@@ -96,7 +96,7 @@ class CommitHook:
     def __init__(self, env):
         self.env = env
 
-    def process(self, commit, status, enable_revmap):
+    def process(self, commit, status, enable_revmap,reponame):
         self.closestatus = status
         
         msg = commit['message']

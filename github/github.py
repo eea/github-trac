@@ -188,7 +188,7 @@ class GithubPlugin(Component):
     def process_request(self, req):
         if self.processHook:
             self.processCommitHook(req)
-        
+
         req.send_response(204)
         req.send_header('Content-Length', 0)
         req.write('')
@@ -204,9 +204,12 @@ class GithubPlugin(Component):
                 self.processBrowserURL(req)
 
             serve2 = req.path_info.startswith('/changeset')
-            self.env.log.debug("Handle Pre-Request /changeset: %s" % serve2)
-            if serve2:
-                self.processChangesetURL(req)
+            repoinfo = req.path_info.replace('/changeset/', '').partition("/")
+            repo = self.env.get_repository(repoinfo[2])
+            if repo.__class__.__name__ == "GitRepository":
+                self.env.log.debug("Handle Pre-Request /changeset: %s" % serve2)
+                if serve2:
+                    self.processChangesetURL(req)
 
         return handler
 
@@ -242,23 +245,8 @@ class GithubPlugin(Component):
         self.env.log.debug("processChangesetURL")
         browser = self.browser.replace('/tree/master', '/commit/')
         
-        url = req.path_info.replace('/changeset/', '')
-        self.env.log.debug("url is %s" % url)
-        svn_rev_match = re.match( '^([0-9]{1,6})([^0-9a-fA-F]|$)', url)
-        if svn_rev_match and int(self.enable_revmap):
-            svn_rev = svn_rev_match.group(1)
-            commit_data = self._get_commit_data('r'+svn_rev)
-            if len(commit_data) == 1:
-                i = commit_data[0]
-                url = i['hash']
-                self.env.log.debug("mapping svn revision %s to github hash %s" % (svn_rev, url));
-            elif len(commit_data) == 0:
-                self.env.log.debug("couldn't map svn revision %s", svn_rev);
-                req.redirect(self.browser)
-            else:
-                self.env.log.debug("svn revision maps to multiple git commit ids.  This shouldn't happen.")
-                req.redirect(self.browser)
-
+        commitinfo = req.path_info.replace('/changeset/', '').partition("/")
+        url = "/%s" % (commitinfo[2] + commitinfo[1] + "commit" + commitinfo[1] + commitinfo[0])
         if not url:
             browser = self.browser
             url = ''
@@ -294,7 +282,9 @@ class GithubPlugin(Component):
             status = 'closed'
 
         if self.autofetch:
-            repo = Git(self.repo)
+            repodir = "%s/%s" % (self.repo, reponame)
+            self.env.log.debug("Autofetching: %s" % repodir)
+            repo = Git(repodir)
 
             try:
               self.env.log.debug("Fetching repo %s" % self.repo)
@@ -308,9 +298,10 @@ class GithubPlugin(Component):
               self.env.log.error("git fetch failed!")
 
         data = req.args.get('payload')
-         
+
         if data:
             jsondata = simplejson.loads(data)
+            reponame = jsondata['repository']['name']
 
             for i in jsondata['commits']:
                 self.hook.process(i, status, self.enable_revmap)
