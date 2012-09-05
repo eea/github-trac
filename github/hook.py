@@ -99,9 +99,7 @@ class CommitHook:
 
         msg = commit['message']
         self.env.log.debug("Processing Commit: %s", msg)
-        note = "Changeset: [/changeset/%s %s]" % (commit['id'], commit['id'])
-        url = "URL: %s" % commit['url']
-        msg = "%s \n * %s \n * %s" % (msg, note, url)
+        msg = '(In [%s %s]) %s' % (commit['url'], commit['id'][:10], msg)
         author = commit['author']['name']
         timestamp = datetime.now(utc)
         if int(enable_revmap):
