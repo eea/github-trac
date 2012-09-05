@@ -211,7 +211,18 @@ class GithubPlugin(Component):
                 self.processBrowserURL(req)
 
             serve2 = req.path_info.startswith('/changeset')
-            repoinfo = req.path_info.replace('/changeset/', '').partition("/")
+            try:
+                repoinfo = req.path_info.replace('/changeset/', '').partition("/")
+            except AttributeError:
+                repoinfo = req.path_info.replace('/changeset/', '')
+                partition = repoinfo.split('/')
+                repoinfo = [partition[0]]
+                if len(partition) > 1:
+                    repoinfo.append('/')
+                    repoinfo.append('/'.join(partition[1:]))
+                else:
+                    repoinfo.append('')
+                    repoinfo.append('')
             repo = self.env.get_repository(repoinfo[2])
             if repo.__class__.__name__ == "GitRepository":
                 self.env.log.debug("Handle Pre-Request /changeset: %s" % serve2)
@@ -252,7 +263,19 @@ class GithubPlugin(Component):
         self.env.log.debug("processChangesetURL")
         browser = self.browser.replace('/tree/master', '/commit/')
 
-        commitinfo = req.path_info.replace('/changeset/', '').partition("/")
+        try:
+            commitinfo = req.path_info.replace('/changeset/', '').partition("/")
+        except AttributeError:
+            commitinfo = req.path_info.replace('/changeset/', '')
+            partition = commitinfo.split('/')
+            commitinfo = [partition[0]]
+            if len(partition) > 1:
+                commitinfo.append('/')
+                commitinfo.append('/'.join(partition[1:]))
+            else:
+                commitinfo.append('')
+                commitinfo.append('')
+
         url = "/%s" % (commitinfo[2] + commitinfo[1] + "commit" + commitinfo[1] + commitinfo[0])
         if not url:
             browser = self.browser
