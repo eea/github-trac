@@ -1,3 +1,5 @@
+""" Installer
+"""
 from setuptools import find_packages, setup
 
 # name can be any name.  This name will be used to create .egg file.
@@ -23,7 +25,7 @@ setup(
         'trac.plugins': [
             'github = github',
 
-        ]    
+        ]
     }
 
 )

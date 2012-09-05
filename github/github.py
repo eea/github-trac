@@ -1,7 +1,12 @@
+""" Github
+"""
+# pylint: disable-msg=C0301, C0111
+
 from trac.core import *
+from trac.core import Component, implements
 from trac.resource import ResourceNotFound
-from trac.config import Option, IntOption, ListOption, BoolOption
-from trac.web.api import IRequestFilter, IRequestHandler, Href, RequestDone
+from trac.config import Option
+from trac.web.api import IRequestFilter, IRequestHandler, RequestDone
 from trac.env import IEnvironmentSetupParticipant
 from trac.versioncontrol import RepositoryManager
 from trac.util.translation import _
@@ -14,21 +19,20 @@ from hook import CommitHook
 import re
 import os.path
 import simplejson
-import re
 
-from git import Git, GitCommandError
+from git import Git
 
 class GithubPlugin(Component):
     implements(IRequestHandler, IRequestFilter, IEnvironmentSetupParticipant,
             IWikiSyntaxProvider)
-    
-    
+
+
     key = Option('github', 'apitoken', '', doc="""Your GitHub API Token found here: https://github.com/account, """)
     closestatus = Option('github', 'closestatus', '', doc="""This is the status used to close a ticket. It defaults to closed.""")
     browser = Option('github', 'browser', '', doc="""Place your GitHub Source Browser URL here to have the /browser entry point redirect to GitHub.""")
     autofetch = Option('github', 'autofetch', '', doc="""Should we auto fetch the repo when we get a commit hook from GitHub.""")
     # TODO: Removed following line, obsolete
-	# repo = Option('trac', 'repository_dir' '', doc="""This is your repository dir""")
+    # repo = Option('trac', 'repository_dir' '', doc="""This is your repository dir""")
     revmap        = Option('github', 'svn_revmap',    '', doc = """a plaintext file mapping svn revisions to git hashes""")
     enable_revmap = Option('github', 'enable_revmap',  0, doc = """use the svn->git map when a request looks like a svn changeset """)
     long_tooltips = Option('github', 'long_tooltips',  0, doc = """don't shorten tooltips""")
@@ -53,7 +57,7 @@ class GithubPlugin(Component):
     def environment_created(self):
         if int(self.enable_revmap):
             self._upgrade_db(self.env.get_db_cnx())
-    
+
     #return true if the db table doesn't exist or needs to be updated
     def environment_needs_upgrade(self, db):
         if int(self.enable_revmap) == 0:
@@ -66,7 +70,7 @@ class GithubPlugin(Component):
             if row[0] > 0:
                 return False
             return True
-        except:
+        except Exception:
             db.rollback()
             return True
 
@@ -85,10 +89,10 @@ class GithubPlugin(Component):
         cursor = db.cursor()
         try:
             cursor.execute("DROP TABLE svn_revmap;")
-        except:
+        except Exception:
             db.rollback()
 
-        db_backend, unused = DatabaseManager(self.env)._get_connector()
+        db_backend, _unused = DatabaseManager(self.env)._get_connector()
         cursor = db.cursor()
         for table in self.SCHEMA:
             for stmt in db_backend.to_sql(table):
@@ -187,11 +191,11 @@ class GithubPlugin(Component):
 
         self.env.log.debug("Handle Request: %s" % serve)
         return serve
-    
+
     def process_request(self, req):
         if self.processHook:
             self.processCommitHook(req)
-		# TODO: Verify this code (and redirect in hook.py also)
+        # TODO: Verify this code (and redirect in hook.py also)
         req.send_response(204)
         req.send_header('Content-Length', 0)
         req.write('')
@@ -210,7 +214,7 @@ class GithubPlugin(Component):
             repoinfo = req.path_info.replace('/changeset/', '').partition("/")
             repo = self.env.get_repository(repoinfo[2])
             if repo.__class__.__name__ == "GitRepository":
-            self.env.log.debug("Handle Pre-Request /changeset: %s" % serve2)
+                self.env.log.debug("Handle Pre-Request /changeset: %s" % serve2)
             if serve2:
                 self.processChangesetURL(req)
 
@@ -229,7 +233,7 @@ class GithubPlugin(Component):
             commit_id = commit_id[1:]
             self.env.log.debug("running query: SELECT git_hash, commit_msg FROM svn_revmap WHERE svn_rev = %s" % commit_id)
             cursor.execute("SELECT git_hash, commit_msg FROM svn_revmap WHERE svn_rev = %s", (commit_id,))
-            rows = cursor.fetchmany(5);
+            rows = cursor.fetchmany(5)
         else:
             self.env.log.debug("running query: SELECT git_hash, commit_msg FROM svn_revmap WHERE git_hash LIKE '%s%%'" % commit_id)
             cursor.execute("SELECT git_hash, commit_msg FROM svn_revmap WHERE git_hash LIKE '%s%%'" % (commit_id,))
@@ -247,7 +251,7 @@ class GithubPlugin(Component):
     def processChangesetURL(self, req):
         self.env.log.debug("processChangesetURL")
         browser = self.browser.replace('/tree/master', '/commit/')
-        
+
         commitinfo = req.path_info.replace('/changeset/', '').partition("/")
         url = "/%s" % (commitinfo[2] + commitinfo[1] + "commit" + commitinfo[1] + commitinfo[0])
         if not url:
@@ -256,7 +260,7 @@ class GithubPlugin(Component):
 
         redirect = '%s%s' % (browser, url)
         self.env.log.debug("Redirect URL: %s" % redirect)
-        out = 'Going to GitHub: %s' % redirect
+        _out = 'Going to GitHub: %s' % redirect
 
         req.redirect(redirect)
 
@@ -274,11 +278,11 @@ class GithubPlugin(Component):
 
         redirect = '%s%s%s' % (browser, rev, url)
         self.env.log.debug("Redirect URL: %s" % redirect)
-        out = 'Going to GitHub: %s' % redirect
+        _out = 'Going to GitHub: %s' % redirect
 
         req.redirect(redirect)
 
-        
+
 
     def processCommitHook(self, req):
         self.env.log.debug("processCommitHook")
@@ -291,29 +295,29 @@ class GithubPlugin(Component):
             if not os.path.isabs(repodir):
                 repodir = os.path.join(self.env.path, repodir)
             # TODO: This was the previous code, the repo options is probably unecessary now.
-			# repodir = "%s/%s" % (self.repo, reponame)
+            # repodir = "%s/%s" % (self.repo, reponame)
             self.env.log.debug("Autofetching: %s" % repodir)
             repo = Git(repodir)
 
             try:
-              self.env.log.debug("Fetching repo %s" % self.repo)
-              repo.execute(['git', 'fetch'])
-              try:
-                self.env.log.debug("Resyncing local repo")
-                self.env.get_repository('').sync()
-              except:
-                self.env.log.error("git sync failed!")
-            except:
-              self.env.log.error("git fetch failed!")
+                self.env.log.debug("Fetching repo %s" % self.repo)
+                repo.execute(['git', 'fetch'])
+                try:
+                    self.env.log.debug("Resyncing local repo")
+                    self.env.get_repository('').sync()
+                except Exception:
+                    self.env.log.error("git sync failed!")
+            except Exception:
+                self.env.log.error("git fetch failed!")
 
         data = req.args.get('payload')
-         
+
         if data:
             jsondata = simplejson.loads(data)
             reponame = jsondata['repository']['name']
 
             for i in jsondata['commits']:
-                self.hook.process(i, status, self.enable_revmap,reponame)
+                self.hook.process(i, status, self.enable_revmap, reponame)
 
-       self.env.log.debug("Redirect URL: %s" % req)
-       req.redirect(self.browser)
+        self.env.log.debug("Redirect URL: %s" % req)
+        req.redirect(self.browser)
